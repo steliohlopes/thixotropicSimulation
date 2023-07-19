@@ -111,12 +111,11 @@ class Mesh:
         self.Pel = FiniteElement(input.pressureElementfamily, self.elementShape, input.pressureElementOrder) # Pressure field
         self.UPel = MixedElement([self.Uel,self.Pel])
 
-    def functionSpace(self):
+    
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
-        W = FunctionSpace(self.meshObj,self.UPel)
-        return W
-    
+        self.functionSpace = FunctionSpace(self.meshObj,self.UPel)
+
     #!Verificar se essas funções ficaram aqui, acho q n faz mt sentido
     def trialFunction(self,functionSpace):
         dw = TrialFunction(functionSpace)
