@@ -1,14 +1,13 @@
 import meshio
 from dolfin import *
-
+from ..ProblemInputs import Inputs
 
 class Mesh:
-    def __init__(self, meshPath, meshFile):
-        self.meshPath = meshPath
-        self.meshFile = meshFile
-        self.msh = meshio.read(meshPath + meshFile + ".msh")
+    def __init__(self, input = Inputs()):
+        self.meshPath = input.meshPath
+        self.meshFile = input.meshFile
+        self.msh = meshio.read(self.meshPath + self.meshFile + ".msh")
 
-    def readDomains(self):
         # Read .msh File
         fid = open(self.meshPath + self.meshFile + ".msh", "r")
         # Initialize variables
@@ -27,7 +26,7 @@ class Mesh:
                 if len(word) == 3:
                     physicalNames[word[2][1 : len(word[2]) - 1]] = int(word[1])
 
-        return physicalNames
+        self.subdomains = physicalNames
 
     def msh2hdmf3D(self):
         for key in self.msh.cell_data_dict["gmsh:physical"].keys():
@@ -90,19 +89,48 @@ class Mesh:
         mvc = MeshValueCollection("size_t", self.meshObj, 2)
         with XDMFFile(self.meshPath + "mf.xdmf") as infile:
             infile.read(mvc, "name_to_read")
-        mf = cpp.mesh.MeshFunctionSizet(self.meshObj, mvc)
+        self.mf = cpp.mesh.MeshFunctionSizet(self.meshObj, mvc)
 
         mvc2 = MeshValueCollection("size_t", self.meshObj, 3)
         with XDMFFile(self.meshPath + "mesh.xdmf") as infile:
             infile.read(mvc2, "name_to_read")
-        cf = cpp.mesh.MeshFunctionSizet(self.meshObj, mvc2)
+        self.cf = cpp.mesh.MeshFunctionSizet(self.meshObj, mvc2)
 
         # Get Element Shape: Triangle, etc...
         self.elementShape = self.meshObj.ufl_cell()
 
         # Define any measure associated with domain and subdomains
-        self.dx = Measure("dx", domain=self.meshObj, subdomain_data=cf)
-        self.ds = Measure("ds", domain=self.meshObj, subdomain_data=mf)
+        self.dx = Measure("dx", domain=self.meshObj, subdomain_data=self.cf)
+        self.ds = Measure("ds", domain=self.meshObj, subdomain_data=self.mf)
 
         # Vectors Normal to the Mesh
         self.n = FacetNormal(self.meshObj)
+
+        # Set Mesh Elements
+        self.Uel = VectorElement(input.velocityElementfamily, self.elementShape, input.velocityElementOrder) # Velocity vector field
+        self.Pel = FiniteElement(input.pressureElementfamily, self.elementShape, input.pressureElementOrder) # Pressure field
+        self.UPel = MixedElement([self.Uel,self.Pel])
+
+    def functionSpace(self):
+        # Function Spaces: Flow
+        # Mixed Function Space: Pressure and Velocity
+        W = FunctionSpace(self.meshObj,self.UPel)
+        return W
+    
+    #!Verificar se essas funções ficaram aqui, acho q n faz mt sentido
+    def trialFunction(self,functionSpace):
+        dw = TrialFunction(functionSpace)
+        return dw
+    
+    def testFunctions(self,functionSpace):
+        v = TestFunctions(functionSpace)
+        return v
+    
+    def function(self,functionSpace):
+        w = Function(functionSpace)
+        return w
+    #!
+    
+
+
+
