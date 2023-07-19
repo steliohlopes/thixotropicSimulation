@@ -1,8 +1,8 @@
 class Inputs:
     def __init__(self):
         ##Mesh
-        self.meshPath = ""
-        self.meshFile = ""
+        self.meshPath = "PreProcessing/Whistle/"
+        self.meshFile = "whistle"
 
         ## Mesh Elements
         # Velocity
