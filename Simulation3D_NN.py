@@ -4,7 +4,8 @@ import numpy as np
 from dolfin import *
 import os
 import timeit
-
+comm = MPI.comm_world
+rank = MPI.rank(comm)
 
 # Helping self defined Functions
 # Read subdomains from .msh file
@@ -50,13 +51,38 @@ def eta(k,nPow,u):
 
 # Inputs
 # Mesh File
-meshPath = './PipeFlowNotRefined/'
-meshFile = 'PipeFlow'
+meshPath = './Whistle/'
+meshFile = 'whistle'
 
 # Pressure Difference or constant velocity
-Pin = 0.1
+Pin = 0.5
 Pout = 0
-Uin=0.0025
+Uin=0.001
+
+#Geometry
+
+
+D_inlet=0.5e-3
+L_inlet=5e-4
+H_inlet=200e-6
+H_outlet=H_inlet
+W_outlet=2e-2
+L_outlet=2e-2
+R=1e-3
+alpha=45*(pi/180)
+l1 = 2*R/(tan(pi/2 - alpha))
+l2 = R*cos(alpha)
+l3 = R*sin(alpha)
+
+
+
+x_outlet=L_inlet+R+l2+l1+L_outlet
+
+inflow_profile = Expression(('Uin*1.5*(1-(( pow(x[1],2) )/( pow(R,2) )))', '0','0'),\
+                            degree=2,Uin=Uin,R=(D_inlet/2))
+
+
+
 
 # Fluid Properties
 rho = 1000
@@ -85,7 +111,9 @@ maxIter =30
 linearSolver = 'mumps'
 
 Subdomains = readDomains(meshPath,meshFile)
+
 print(Subdomains)
+begin("Total running time: %f\n" % (x_outlet))
 
 meshObj = Mesh()
 with XDMFFile(meshPath+"mesh.xdmf") as infile:
@@ -131,10 +159,8 @@ w = Function(W)
 
 # Apply Flow Boundary Conditions
 bcU1 = DirichletBC(W.sub(0),Constant((0.0,0.0,0.0)),mf,Subdomains['Wall'])
-bcU2 = DirichletBC(W.sub(0),Constant((0.0,0.0,0.0)),mf,Subdomains['Garganta'])
-# bcU3 = DirichletBC(W.sub(0),Constant((0.0,0.0,0.0)),mf,Subdomains['SideWall'])
-bcU4 = DirichletBC(W.sub(0), Constant((Uin,0.0,0.0)), mf,Subdomains['Inlet'])
-bcs = [bcU1,bcU2,bcU4]
+# bcU3 = DirichletBC(W.sub(0), inflow_profile, mf,Subdomains['Inlet'])
+bcs = [bcU1]
 
 
 #Start timer 
@@ -146,7 +172,7 @@ start = timeit.default_timer()
 a01 = (inner(TT(u,p,eta(k,1,u)),DD(v)))*dx()
 
        # Outlet Pressure                           # Inlet Pressure                           # Gravity
-L01 =  - (Pout)*dot(n,v)*ds(Subdomains['Outlet']) #- (Pin)*dot(n,v)*ds(Subdomains['Inlet'])# + inner(rho*fb(inputs),v)*dx()    
+L01 =  - (Pout)*dot(n,v)*ds(Subdomains['Outlet']) - (Pin)*dot(n,v)*ds(Subdomains['Inlet'])# + inner(rho*fb(inputs),v)*dx()    
         
 # Mass Conservation(Continuity)
 a02 = (q*div(u))*dx()
@@ -175,29 +201,29 @@ prmU0['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
 # Solve Problem
 (no_iterations,converged) = solverU0.solve()
 
-# ----------------------------Non Newtonian----------------------------
-wini = interpolate(w, W)
-a01 = (inner(TT(u,p,eta(k,nPow,u)),DD(v)))*dx()
- # Complete Weak Form
-F0 = (a01 + a02) - (L01 + L02)
-    # Jacobian Matrix
-J0 = derivative(F0,w,dw)
+# # ----------------------------Non Newtonian----------------------------
+# wini = interpolate(w, W)
+# a01 = (inner(TT(u,p,eta(k,nPow,u)),DD(v)))*dx()
+#  # Complete Weak Form
+# F0 = (a01 + a02) - (L01 + L02)
+#     # Jacobian Matrix
+# J0 = derivative(F0,w,dw)
         
-# ##########   Numerical Solver Properties
-# # Problem and Solver definitions
-problemU0 = NonlinearVariationalProblem(F0,w,bcs,J0)
-solverU0 = NonlinearVariationalSolver(problemU0)
-# # # Solver Parameters
-prmU0 = solverU0.parameters 
-prmU0['nonlinear_solver'] = 'newton'
-prmU0['newton_solver']['absolute_tolerance'] = absTol
-prmU0['newton_solver']['relative_tolerance'] = relTol
-prmU0['newton_solver']['maximum_iterations'] = maxIter
-prmU0['newton_solver']['linear_solver'] = linearSolver
-# prmU0['newton_solver']['preconditioner'] = 'ilu'
-# info(prmU0,True)  #get full info on the parameters
-# Solve Problem
-(no_iterations,converged) = solverU0.solve()
+# # ##########   Numerical Solver Properties
+# # # Problem and Solver definitions
+# problemU0 = NonlinearVariationalProblem(F0,w,bcs,J0)
+# solverU0 = NonlinearVariationalSolver(problemU0)
+# # # # Solver Parameters
+# prmU0 = solverU0.parameters 
+# prmU0['nonlinear_solver'] = 'newton'
+# prmU0['newton_solver']['absolute_tolerance'] = absTol
+# prmU0['newton_solver']['relative_tolerance'] = relTol
+# prmU0['newton_solver']['maximum_iterations'] = maxIter
+# prmU0['newton_solver']['linear_solver'] = linearSolver
+# # prmU0['newton_solver']['preconditioner'] = 'ilu'
+# # info(prmU0,True)  #get full info on the parameters
+# # Solve Problem
+# (no_iterations,converged) = solverU0.solve()
 
 (u1, p1) = w.leaf_node().split()
 u1.rename("Velocity Vector", "")
@@ -213,7 +239,7 @@ hours, mins = divmod(mins, 60)
 
 begin("Total running time: %dh:%dmin:%ds \n" % (hours, mins, secs))
 
-Simulation_file = XDMFFile(meshPath+meshFile+".xdmf")
+Simulation_file = XDMFFile(meshPath+meshFile+"NN.xdmf")
 Simulation_file.parameters["flush_output"] = True
 Simulation_file.parameters["functions_share_mesh"]= True
 Simulation_file.write(u1, 0.0)
@@ -222,49 +248,47 @@ Simulation_file.write(p1, 0.0)
 ux = []
 j = []
 
-L = 12e-3
-l = 2e-3
-R = 100e-6
-r = 50e-6
-r0 = 0
 
-epsdx=5e-4
-xpoint=(-l/2)-epsdx
 
-for i in np.linspace(-R, R, 200):
+for i in np.linspace(-0.01, 0.01, 200):
     j.append(i)
-    ux.append(u1(xpoint,i,0)[0])
+    ux.append(u1(0.0242,0.00035,i)[0])
 
-#poiseuille
-jPoiseuille=[]
-uxPoiseuille = []
-
-for i in np.linspace(-R, R, 200):
-    jPoiseuille.append(i)
-    # Poiseuille Pressure bc
-    # uxPoiseuille.append(-((Pout-Pin)/L)*(i/(2*k))*(R-i))
-    #Poiseuille velocity bc y[0,H]
-    # uxPoiseuille.append((1.5*Uin*(1-((i-R/2)**2/(R/2)**2))))
-    #Poiseuille velocity bc y[-H/2,H/2]
-    uxPoiseuille.append((1.5*Uin*(1-((i)**2/(R)**2))))
-
-#PowerLaw Analytical
-jPowerLaw=[]
-uxPowerLaw=[]
-
-for i in np.linspace(-R, R, 200):
-    jPowerLaw.append(i)
-    uxPowerLaw.append(nPow/(nPow+1)*((p1(xpoint-epsdx,i,0)-p1(xpoint+epsdx,i,0))/(2*k*(2*epsdx)))**(1/nPow)*(R**((nPow+1)/nPow) -abs(i)**((nPow+1)/nPow)))
-
-
-plt.plot(
-    uxPowerLaw, jPowerLaw,'g',
-    # uxPoiseuille, jPoiseuille,'b',
-    ux,j,'r')
-
-plt.legend([
-    'PowerLaw Analytical',
-    # 'Poiseuille flow',
-    'FEniCS result'])
+plt.legend(['FEniCS result Velocity Profile'])
 plt.show()
-plt.savefig(meshPath+'Result.png')
+plt.savefig(meshPath+'Result_u(y).png')
+
+
+# #poiseuille
+# jPoiseuille=[]
+# uxPoiseuille = []
+
+# for i in np.linspace(-R, R, 200):
+#     jPoiseuille.append(i)
+#     # Poiseuille Pressure bc
+#     # uxPoiseuille.append(-((Pout-Pin)/L)*(i/(2*k))*(R-i))
+#     #Poiseuille velocity bc y[0,H]
+#     # uxPoiseuille.append((1.5*Uin*(1-((i-R/2)**2/(R/2)**2))))
+    #Poiseuille velocity bc y[-H/2,H/2]
+    # uxPoiseuille.append((1.5*Uin*(1-((i)**2/(R)**2))))
+
+# #PowerLaw Analytical
+# jPowerLaw=[]
+# uxPowerLaw=[]
+
+# for i in np.linspace(-R, R, 200):
+#     jPowerLaw.append(i)
+#     uxPowerLaw.append(nPow/(nPow+1)*((p1(xpoint-epsdx,i,0)-p1(xpoint+epsdx,i,0))/(2*k*(2*epsdx)))**(1/nPow)*(R**((nPow+1)/nPow) -abs(i)**((nPow+1)/nPow)))
+
+
+# plt.plot(
+# #     uxPowerLaw, jPowerLaw,'g',
+#     uxPoiseuille, jPoiseuille,'b',
+#     ux,j,'r')
+
+# plt.legend([
+# #     'PowerLaw Analytical',
+#     'Poiseuille flow',
+#     'FEniCS result'])
+# plt.show()
+# plt.savefig(meshPath+'Result.png')
