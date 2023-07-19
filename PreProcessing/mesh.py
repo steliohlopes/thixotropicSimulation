@@ -1,13 +1,16 @@
+import sys
+
+sys.path.append("..")
 import meshio
-from dolfin import *
-from ..ProblemInputs import Inputs
+
+# from dolfin import
+from ProblemInputs import Inputs
+
 
 class Mesh:
-    def __init__(self, input = Inputs()):
+    def __init__(self, input=Inputs()):
         self.meshPath = input.meshPath
         self.meshFile = input.meshFile
-        self.msh = meshio.read(self.meshPath + self.meshFile + ".msh")
-
         # Read .msh File
         fid = open(self.meshPath + self.meshFile + ".msh", "r")
         # Initialize variables
@@ -29,6 +32,7 @@ class Mesh:
         self.subdomains = physicalNames
 
     def msh2hdmf3D(self):
+        self.msh = meshio.read(self.meshPath + self.meshFile + ".msh")
         for key in self.msh.cell_data_dict["gmsh:physical"].keys():
             if key == "triangle":
                 triangle_data = self.msh.cell_data_dict["gmsh:physical"][key]
@@ -54,6 +58,7 @@ class Mesh:
         meshio.write(self.meshPath + "mf.xdmf", triangle_mesh)
 
     def msh2hdmf2D(self):
+        self.msh = meshio.read(self.meshPath + self.meshFile + ".msh")
         for key in self.msh.cell_data_dict["gmsh:physical"].keys():
             if key == "line":
                 line_data = self.msh.cell_data_dict["gmsh:physical"][key]
@@ -107,29 +112,29 @@ class Mesh:
         self.n = FacetNormal(self.meshObj)
 
         # Set Mesh Elements
-        self.Uel = VectorElement(input.velocityElementfamily, self.elementShape, input.velocityElementOrder) # Velocity vector field
-        self.Pel = FiniteElement(input.pressureElementfamily, self.elementShape, input.pressureElementOrder) # Pressure field
-        self.UPel = MixedElement([self.Uel,self.Pel])
+        self.Uel = VectorElement(
+            input.velocityElementfamily, self.elementShape, input.velocityElementOrder
+        )  # Velocity vector field
+        self.Pel = FiniteElement(
+            input.pressureElementfamily, self.elementShape, input.pressureElementOrder
+        )  # Pressure field
+        self.UPel = MixedElement([self.Uel, self.Pel])
 
-    
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
-        self.functionSpace = FunctionSpace(self.meshObj,self.UPel)
+        self.functionSpace = FunctionSpace(self.meshObj, self.UPel)
 
     #!Verificar se essas funções ficaram aqui, acho q n faz mt sentido
-    def trialFunction(self,functionSpace):
+    def trialFunction(self, functionSpace):
         dw = TrialFunction(functionSpace)
         return dw
-    
-    def testFunctions(self,functionSpace):
+
+    def testFunctions(self, functionSpace):
         v = TestFunctions(functionSpace)
         return v
-    
-    def function(self,functionSpace):
+
+    def function(self, functionSpace):
         w = Function(functionSpace)
         return w
+
     #!
-    
-
-
-
