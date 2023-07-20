@@ -1,6 +1,8 @@
+import sys
+sys.path.append("..")
 from dolfin import *
-from ..ProblemInputs import Inputs
-from ..PreProcessing.mesh import Mesh
+from ProblemInputs import Inputs
+from PreProcessing.mesh import Mesh
 
 
 class Boundaries:
