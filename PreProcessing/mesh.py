@@ -7,10 +7,16 @@ import meshio
 from ProblemInputs import Inputs
 
 
-class Mesh:
+class FiniteElementMesh:
     def __init__(self, input=Inputs()):
         self.meshPath = input.meshPath
         self.meshFile = input.meshFile
+
+        self.velocityElementfamily = input.velocityElementfamily
+        self.velocityElementOrder = input.velocityElementOrder
+        self.pressureElementOrder = input.pressureElementOrder
+        self.pressureElementfamily = input.pressureElementfamily
+
         # Read .msh File
         fid = open(self.meshPath + self.meshFile + ".msh", "r")
         # Initialize variables
@@ -113,10 +119,10 @@ class Mesh:
 
         # Set Mesh Elements
         self.Uel = VectorElement(
-            input.velocityElementfamily, self.elementShape, input.velocityElementOrder
+            self.velocityElementfamily, self.elementShape, self.velocityElementOrder
         )  # Velocity vector field
         self.Pel = FiniteElement(
-            input.pressureElementfamily, self.elementShape, input.pressureElementOrder
+            self.pressureElementfamily, self.elementShape, self.pressureElementOrder
         )  # Pressure field
         self.UPel = MixedElement([self.Uel, self.Pel])
 

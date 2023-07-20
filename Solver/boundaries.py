@@ -2,11 +2,11 @@ import sys
 sys.path.append("..")
 from dolfin import *
 from ProblemInputs import Inputs
-from PreProcessing.mesh import Mesh
+from PreProcessing.mesh import FiniteElementMesh
 
 
 class Boundaries:
-    def __init__(self, inletCondition, input=Inputs(), mesh=Mesh()):
+    def __init__(self, inletCondition, input=Inputs(), mesh=FiniteElementMesh()):
         # TODO Fazer para 2D verificando o tamanho do elemento
         self.inletCondition = inletCondition
         self.bcs = []
