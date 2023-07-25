@@ -23,6 +23,7 @@ class Inputs:
         self.ts = 663  # Caracteristic viscosity buildup time
 
         ## Solver Parameters
+        self.nonlinearSolver = "newton"
         self.absTol = 1e-9
         self.relTol = 1e-10
         self.maxIter = 30
@@ -43,7 +44,7 @@ class Inputs:
         self.inletBCs = []
         self.inletBCs.append("Inlet")
 
-    def constVelocityBC(self):
+    def VelocityBC(self):
         # Constant velocity
         self.Uin = 0.0025
         self.inletBCs = []
