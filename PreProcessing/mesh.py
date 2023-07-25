@@ -129,18 +129,3 @@ class FiniteElementMesh:
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
         self.functionSpace = FunctionSpace(self.meshObj, self.UPel)
-
-    #!Verificar se essas funções ficaram aqui, acho q n faz mt sentido
-    def trialFunction(self, functionSpace):
-        dw = TrialFunction(functionSpace)
-        return dw
-
-    def testFunctions(self, functionSpace):
-        v = TestFunctions(functionSpace)
-        return v
-
-    def function(self, functionSpace):
-        w = Function(functionSpace)
-        return w
-
-    #!
