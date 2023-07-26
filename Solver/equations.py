@@ -64,8 +64,11 @@ class Solver:
         self.w = Function(mesh.functionSpace)
 
         # Split into Velocity and Pressure
-        # TODO Fazer para 2D verificando o tamanho do elemento
-        (self.u, self.p) = (as_vector((self.w[0], self.w[1], self.w[2])), self.w[3])
+        if mesh.Dim == 3:
+            (self.u, self.p) = (as_vector((self.w[0], self.w[1], self.w[2])), self.w[3])
+        elif mesh.Dim == 2:
+            (self.u, self.p) = (as_vector((self.w[0], self.w[1])), self.w[2])
+
 
     def NewtonianSolver(self):
         a01 = (inner(TT(self.u,self.p,eta(self.k,1,self.u)),DD(self.v)))*self.dx()
