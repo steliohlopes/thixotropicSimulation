@@ -33,6 +33,7 @@ class Solver:
         
         #TODO HERDAR COM SUPER
         self.k = input.k
+        self.nPow = input.nPow
         self.Pout = input.Pout
         self.outletBCs = input.outletBCs
 
@@ -70,7 +71,10 @@ class Solver:
             (self.u, self.p) = (as_vector((self.w[0], self.w[1])), self.w[2])
 
 
-    def NewtonianSolver(self):
+    def NewtonianSolver(self,wini = None):
+        if wini != None:
+            self.w = wini
+
         a01 = (inner(TT(self.u,self.p,eta(self.k,1,self.u)),DD(self.v)))*self.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
                                      
@@ -104,6 +108,42 @@ class Solver:
 
         return self.w
     
+    def PowerLawSolver(self,wini = None):
+        if wini != None:
+            self.w = wini
+        
+        a01 = (inner(TT(self.u,self.p,eta(self.k,self.nPow,self.u)),DD(self.v)))*self.dx()
+        # + (rho*dot(dot(u,grad(u)),v) 
+                                     
+        L01 =  - (self.Pout)*dot(self.n,self.v)*self.ds(self.subdomains[self.outletBCs[0]]) # Outlet Pressure
+            # + inner(rho*fb(inputs),v)*dx()   # Gravity
+
+        if self.inletCondition == 0:
+            L01 = L01 - (self.Pin)*dot(self.n,self.v)*self.ds(self.subdomains[self.inletBCs[0]]) # Inlet Pressure 
+
+        # Mass Conservation(Continuity)
+        a02 = (self.q*div(self.u))*self.dx()
+        L02 = 0
+
+        # Complete Weak Form
+        F0 = (a01 + a02) - (L01 + L02)
+        # Jacobian Matrix
+        J0 = derivative(F0,self.w,self.dw)
+
+        # Problem and Solver definitions
+        problemU0 = NonlinearVariationalProblem(F0,self.w,self.bcs,J0)
+        solverU0 = NonlinearVariationalSolver(problemU0)
+        # # Solver Parameters
+        prmU0 = solverU0.parameters 
+        prmU0['nonlinear_solver'] = self.nonlinearSolver
+        prmU0['newton_solver']['absolute_tolerance'] = self.absTol
+        prmU0['newton_solver']['relative_tolerance'] = self.relTol
+        prmU0['newton_solver']['maximum_iterations'] = self.maxIter
+        prmU0['newton_solver']['linear_solver'] = self.linearSolver
+        prmU0['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
+        (no_iterations,converged) = solverU0.solve()
+
+        return self.w    
 
 
 
