@@ -17,15 +17,13 @@ class Boundaries:
         self.inletCondition = inletCondition
         self.bcs = []
 
-        if mesh.Dim == 3:
-            noSlipVector = Constant((0.0, 0.0, 0.0))
-            UinVector = Constant((self.Uin, 0.0, 0.0))
-        elif mesh.Dim == 2:
-            noSlipVector = Constant((0.0, 0.0))
-            UinVector = Constant((self.Uin, 0.0))
-
         ## No slip Boundaries
         for sub in input.noSlipBCs:
+            if mesh.Dim == 3:
+                noSlipVector = Constant((0.0, 0.0, 0.0))
+            elif mesh.Dim == 2:
+                noSlipVector = Constant((0.0, 0.0))
+
             self.bcs.append(
                 DirichletBC(
                     mesh.functionSpace.sub(0),
@@ -41,6 +39,11 @@ class Boundaries:
             self.inletBCs = input.inletBCs
 
         elif self.inletCondition == 1:
+            if mesh.Dim == 3:
+                UinVector = Constant((input.Uin, 0.0, 0.0))
+            elif mesh.Dim == 2:
+                UinVector = Constant((input.Uin, 0.0))
+
             input.VelocityBC()
             self.Uin = input.Uin
             self.inletBCs = input.inletBCs
@@ -53,6 +56,5 @@ class Boundaries:
                         mesh.subdomains[sub],
                     )
                 )
-        
         
 
