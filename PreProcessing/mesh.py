@@ -3,19 +3,22 @@ import sys
 sys.path.append("..")
 import meshio
 
-# from dolfin import
+from dolfin import *
 from ProblemInputs import Inputs
 
 
 class FiniteElementMesh:
-    def __init__(self, input=Inputs()):
-        self.meshPath = input.meshPath
-        self.meshFile = input.meshFile
+    def __init__(self, meshPath, meshFile):
+        self.meshPath = meshPath
+        self.meshFile = meshFile
 
-        self.velocityElementfamily = input.velocityElementfamily
-        self.velocityElementOrder = input.velocityElementOrder
-        self.pressureElementOrder = input.pressureElementOrder
-        self.pressureElementfamily = input.pressureElementfamily
+        ## Mesh Elements
+        # Velocity
+        self.velocityElementfamily = "Lagrange"
+        self.velocityElementOrder = 2
+        # Pressure
+        self.pressureElementfamily = "Lagrange"
+        self.pressureElementOrder = 1
 
         # Read .msh File
         fid = open(self.meshPath + self.meshFile + ".msh", "r")
@@ -92,7 +95,7 @@ class FiniteElementMesh:
         meshio.write(self.meshPath + "mesh.xdmf", triangle_mesh)
         meshio.write(self.meshPath + "mf.xdmf", line_mesh)
 
-    def meshObject3D(self):
+    def createMeshObject3D(self):
         self.meshObj = Mesh()
 
         with XDMFFile(self.meshPath + "mesh.xdmf") as infile:

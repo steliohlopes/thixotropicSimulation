@@ -4,14 +4,6 @@ class Inputs:
         self.meshPath = "PreProcessing/Whistle/"
         self.meshFile = "whistle"
 
-        ## Mesh Elements
-        # Velocity
-        self.velocityElementfamily = "Lagrange"
-        self.velocityElementOrder = 2
-        # Pressure
-        self.pressureElementfamily = "Lagrange"
-        self.pressureElementOrder = 1
-
         ## Rheology - Modified SMD (Souza Mendes e Dutra (2004)) + Cure(tauY(t))
         # Input Variables
         self.rho = 1000  # Density (kg/m³)
