@@ -1,35 +1,34 @@
 import sys
-
-sys.path.append("..")
 from dolfin import *
 from ProblemInputs import Inputs
-from PreProcessing.mesh import FiniteElementMesh
+
+sys.path.append("..")
 
 
 class Boundaries:
-    def __init__(self, inletCondition, input=Inputs(), mesh=FiniteElementMesh()):
+    def __init__(self, inletCondition, mesh, input=Inputs()):
         ###########################################
         # inletCondition = 0 -> Constant inlet Pressure Condition
         # inletCondition = 1 -> Constant inlet X Velocity  Condition
         # inletCondition = 2 -> fully developed flow inlet X Velocity  Condition
 
-        # TODO Fazer para 2D verificando o tamanho do elemento
+        self.mesh = mesh
         self.inletCondition = inletCondition
         self.bcs = []
 
         ## No slip Boundaries
         for sub in input.noSlipBCs:
-            if mesh.Dim == 3:
+            if self.mesh.Dim == 3:
                 noSlipVector = Constant((0.0, 0.0, 0.0))
-            elif mesh.Dim == 2:
+            elif self.mesh.Dim == 2:
                 noSlipVector = Constant((0.0, 0.0))
 
             self.bcs.append(
                 DirichletBC(
-                    mesh.functionSpace.sub(0),
+                    self.mesh.functionSpace.sub(0),
                     noSlipVector,
-                    mesh.mf,
-                    mesh.subdomains[sub],
+                    self.mesh.mf,
+                    self.mesh.subdomains[sub],
                 )
             )
 
@@ -39,9 +38,9 @@ class Boundaries:
             self.inletBCs = input.inletBCs
 
         elif self.inletCondition == 1:
-            if mesh.Dim == 3:
+            if self.mesh.Dim == 3:
                 UinVector = Constant((input.Uin, 0.0, 0.0))
-            elif mesh.Dim == 2:
+            elif self.mesh.Dim == 2:
                 UinVector = Constant((input.Uin, 0.0))
 
             input.VelocityBC()
@@ -50,11 +49,9 @@ class Boundaries:
             for sub in self.inletBCs:
                 self.bcs.append(
                     DirichletBC(
-                        mesh.functionSpace.sub(0),
+                        self.mesh.functionSpace.sub(0),
                         UinVector,
-                        mesh.mf,
-                        mesh.subdomains[sub],
+                        self.mesh.mf,
+                        self.mesh.subdomains[sub],
                     )
                 )
-        
-
