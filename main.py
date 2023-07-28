@@ -1,13 +1,16 @@
 from PreProcessing.mesh import FiniteElementMesh
 from ProblemInputs import Fluid
-
-
-meshPath = "PreProcessing/Whistle/"
-meshFile = "whistle"
+from Solver.boundaries import Boundaries
+from Solver.equations import Solver
+meshPath = "PreProcessing/PipeFlow/"
+meshFile = "PipeFlow"
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
-mesh.msh2hdmf3D()
-mesh.createMeshObject3D
+# mesh.msh2hdmf3D()
+print(mesh.subdomains)
+mesh.createMeshObject3D()
+
+boundaries = Boundaries(mesh=mesh, Pin=1,noSlipBCs=["Wall","Garganta"])
 
 fluid = Fluid(
         rho=1000,
@@ -18,3 +21,7 @@ fluid = Fluid(
         etaInf=64.1,
         ts=663
         )
+
+newtonianTest = Solver(mesh=mesh,fluid=fluid,boundaries=boundaries)
+newtonianTest.PowerLawSolver()
+
