@@ -1,17 +1,3 @@
-class Inputs:
-    def __init__(self):
-        ##Mesh
-        self.meshPath = "PreProcessing/Whistle/"
-        self.meshFile = "whistle"
-
-
-
-        ##Outlet boundary conditions
-        self.Pout = 0
-        self.outletBCs = []
-        self.outletBCs.append("Outlet")
-
-
 class Fluid:
     def __init__(self, rho=None, k=None, nPow=None, tau0=None, eta0=None, etaInf=None, ts=None):
 

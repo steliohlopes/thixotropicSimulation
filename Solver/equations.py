@@ -1,8 +1,6 @@
-import sys
-
-sys.path.append("..")
 from dolfin import *
-from Solver.boundaries import Boundaries
+import sys
+sys.path.append("..")
 
 # Deformation Tensor
 def DD(u):
