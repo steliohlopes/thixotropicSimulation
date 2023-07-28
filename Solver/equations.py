@@ -2,8 +2,6 @@ import sys
 
 sys.path.append("..")
 from dolfin import *
-from ProblemInputs import Inputs
-from PreProcessing.mesh import FiniteElementMesh
 from Solver.boundaries import Boundaries
 
 # Deformation Tensor
@@ -29,45 +27,29 @@ def eta(k,nPow,u):
     return k*pow(gammaDot(u)+eps,nPow-1)
 
 class Solver:
-    def __init__(self, input=Inputs(), mesh=FiniteElementMesh(), boundaries = Boundaries()):
-        
-        #TODO HERDAR COM SUPER
-        self.k = input.k
-        self.nPow = input.nPow
-        self.Pout = input.Pout
-        self.outletBCs = input.outletBCs
+    def __init__(self, mesh,fluid, boundaries):
+
+        self.mesh = mesh
+        self.fluid = fluid
+        self.boundaries = boundaries
 
         ## Solver Parameters
-        self.absTol = input.absTol
-        self.relTol = input.relTol
-        self.maxIter = input.maxIter
-        self.linearSolver = input.linearSolver
-        self.nonlinearSolver = input.nonlinearSolver
-
-        self.subdomains = mesh.subdomains
-        self.dx = mesh.dx
-        self.ds = mesh.ds
-        self.n = mesh.n
-
-        self.bcs = boundaries.bcs
-        self.inletCondition = boundaries.inletCondition
-        self.inletBCs = boundaries.inletBCs
-
-        if self.inletCondition == 0:
-            self.Pin == boundaries.Pin
-        elif self.inletCondition == 1:
-            self.Uin == boundaries.Uin
+        self.nonlinearSolver = "newton"
+        self.absTol = 1e-9
+        self.relTol = 1e-10
+        self.maxIter = 30
+        self.linearSolver = "mumps"
 
         ##### Functions
         ## Trial and Test function(s)
-        self.dw = TrialFunction(mesh.functionSpace)
-        (self.v, self.q) = TestFunctions(mesh.functionSpace) #Funçao peso
-        self.w = Function(mesh.functionSpace)
+        self.dw = TrialFunction( self.mesh.functionSpace)
+        (self.v, self.q) = TestFunctions( self.mesh.functionSpace) #Funçao peso
+        self.w = Function( self.mesh.functionSpace)
 
         # Split into Velocity and Pressure
-        if mesh.Dim == 3:
+        if  self.mesh.Dim == 3:
             (self.u, self.p) = (as_vector((self.w[0], self.w[1], self.w[2])), self.w[3])
-        elif mesh.Dim == 2:
+        elif  self.mesh.Dim == 2:
             (self.u, self.p) = (as_vector((self.w[0], self.w[1])), self.w[2])
 
 
@@ -75,17 +57,17 @@ class Solver:
         if wini != None:
             self.w = wini
 
-        a01 = (inner(TT(self.u,self.p,eta(self.k,1,self.u)),DD(self.v)))*self.dx()
+        a01 = (inner(TT(self.u,self.p,eta(self.fluid.k,1,self.u)),DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
                                      
-        L01 =  - (self.Pout)*dot(self.n,self.v)*self.ds(self.subdomains[self.outletBCs[0]]) # Outlet Pressure
+        L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.outletBCs[0]]) # Outlet Pressure
             # + inner(rho*fb(inputs),v)*dx()   # Gravity
 
-        if self.inletCondition == 0:
-            L01 = L01 - (self.Pin)*dot(self.n,self.v)*self.ds(self.subdomains[self.inletBCs[0]]) # Inlet Pressure 
+        if self.boundaries.inletCondition == 0:
+            L01 = L01 - (self.boundaries.Pin)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.inletBCs[0]]) # Inlet Pressure 
 
         # Mass Conservation(Continuity)
-        a02 = (self.q*div(self.u))*self.dx()
+        a02 = (self.q*div(self.u))*self.mesh.dx()
         L02 = 0
 
         # Complete Weak Form
@@ -94,7 +76,7 @@ class Solver:
         J0 = derivative(F0,self.w,self.dw)
 
         # Problem and Solver definitions
-        problemU0 = NonlinearVariationalProblem(F0,self.w,self.bcs,J0)
+        problemU0 = NonlinearVariationalProblem(F0,self.w,self.boundaries.bcs,J0)
         solverU0 = NonlinearVariationalSolver(problemU0)
             # # Solver Parameters
         prmU0 = solverU0.parameters 
@@ -112,17 +94,17 @@ class Solver:
         if wini != None:
             self.w = wini
         
-        a01 = (inner(TT(self.u,self.p,eta(self.k,self.nPow,self.u)),DD(self.v)))*self.dx()
+        a01 = (inner(TT(self.u,self.p,eta(self.fluid.k,self.fluid.nPow,self.u)),DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
                                      
-        L01 =  - (self.Pout)*dot(self.n,self.v)*self.ds(self.subdomains[self.outletBCs[0]]) # Outlet Pressure
+        L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.outletBCs[0]]) # Outlet Pressure
             # + inner(rho*fb(inputs),v)*dx()   # Gravity
 
-        if self.inletCondition == 0:
-            L01 = L01 - (self.Pin)*dot(self.n,self.v)*self.ds(self.subdomains[self.inletBCs[0]]) # Inlet Pressure 
+        if self.boundaries.inletCondition == 0:
+            L01 = L01 - (self.boundaries.Pin)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.inletBCs[0]]) # Inlet Pressure 
 
         # Mass Conservation(Continuity)
-        a02 = (self.q*div(self.u))*self.dx()
+        a02 = (self.q*div(self.u))*self.mesh.dx()
         L02 = 0
 
         # Complete Weak Form
@@ -131,7 +113,7 @@ class Solver:
         J0 = derivative(F0,self.w,self.dw)
 
         # Problem and Solver definitions
-        problemU0 = NonlinearVariationalProblem(F0,self.w,self.bcs,J0)
+        problemU0 = NonlinearVariationalProblem(F0,self.w,self.boundaries.bcs,J0)
         solverU0 = NonlinearVariationalSolver(problemU0)
         # # Solver Parameters
         prmU0 = solverU0.parameters 

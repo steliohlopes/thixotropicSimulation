@@ -1,8 +1,9 @@
 from ProblemInputs import Inputs
 from PreProcessing.mesh import FiniteElementMesh
 
+meshPath = "PreProcessing/Whistle/"
+meshFile = "whistle"
 
-inputs = Inputs()
-mesh = FiniteElementMesh(inputs)
+mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 mesh.msh2hdmf3D()
-print(mesh)
+mesh.createMeshObject3D

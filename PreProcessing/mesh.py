@@ -2,9 +2,7 @@ import sys
 
 sys.path.append("..")
 import meshio
-
 from dolfin import *
-from ProblemInputs import Inputs
 
 
 class FiniteElementMesh:

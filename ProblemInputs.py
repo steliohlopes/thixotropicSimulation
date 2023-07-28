@@ -4,33 +4,13 @@ class Inputs:
         self.meshPath = "PreProcessing/Whistle/"
         self.meshFile = "whistle"
 
-        ## Solver Parameters
-        self.nonlinearSolver = "newton"
-        self.absTol = 1e-9
-        self.relTol = 1e-10
-        self.maxIter = 30
-        self.linearSolver = "mumps"
 
-        ## No slip Boundaries
-        self.noSlipBCs = []
-        self.noSlipBCs.append("Wall")
 
         ##Outlet boundary conditions
         self.Pout = 0
         self.outletBCs = []
         self.outletBCs.append("Outlet")
 
-    def pressureBC(self):
-        # Pressure Difference
-        self.Pin = 0.1
-        self.inletBCs = []
-        self.inletBCs.append("Inlet")
-
-    def VelocityBC(self):
-        # Constant velocity
-        self.Uin = 0.0025
-        self.inletBCs = []
-        self.inletBCs.append("Inlet")
 
 class Fluid:
     def __init__(self, rho=None, k=None, nPow=None, tau0=None, eta0=None, etaInf=None, ts=None):
