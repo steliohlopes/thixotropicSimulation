@@ -1,5 +1,6 @@
 from dolfin import *
 import sys
+import timeit
 sys.path.append("..")
 
 # Deformation Tensor
@@ -52,6 +53,7 @@ class Solver:
 
 
     def NewtonianSolver(self,wini = None):
+        self.start = timeit.default_timer()
         if wini != None:
             self.w = wini
 
@@ -85,10 +87,12 @@ class Solver:
         prmU0['newton_solver']['linear_solver'] = self.linearSolver
         prmU0['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
         (no_iterations,converged) = solverU0.solve()
+        self.stop = timeit.default_timer()
 
         return self.w
     
     def PowerLawSolver(self,wini = None):
+        self.start = timeit.default_timer()
         if wini != None:
             self.w = wini
         
@@ -122,9 +126,37 @@ class Solver:
         prmU0['newton_solver']['linear_solver'] = self.linearSolver
         prmU0['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
         (no_iterations,converged) = solverU0.solve()
+        self.stop = timeit.default_timer()
 
-        return self.w    
+        return self.w
+    
+    def SaveSimulationData(self,fileName):
+        (self.u1, self.p1) = self.w.leaf_node().split()
+        self.u1.rename("Velocity Vector", "")
+        self.p1.rename("Pressure", "")
+        Simulation_file = XDMFFile(self.mesh.meshPath+fileName+".xdmf")
+        Simulation_file.parameters["flush_output"] = True
+        Simulation_file.parameters["functions_share_mesh"]= True
+        Simulation_file.write(self.u1, 0.0)
+        Simulation_file.write(self.p1, 0.0)
 
+        total_time = self.stop - self.start
+        # Output running time in a nice format.
+        mins, secs = divmod(total_time, 60)
+        hours, mins = divmod(mins, 60)
+
+        log = open(self.mesh.meshPath+fileName+"_log.txt","w")
+        log.write("rho="+self.fluid.rho+
+                  "\nk="+self.fluid.k+
+                  "\nnPow="+self.fluid.nPow+
+                  "\ntau0="+self.fluid.tau0+
+                  "\neta0="+self.fluid.eta0+
+                  "\netaInf="+self.fluid.etaInf+
+                  "\nts="+self.fluid.ts)
+        log.write("\nTotal running time: %dh:%dmin:%ds \n" % (hours, mins, secs))
+        log.close()
+
+        return
 
 
 
