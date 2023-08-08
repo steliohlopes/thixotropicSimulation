@@ -146,21 +146,14 @@ class Solver:
         hours, mins = divmod(mins, 60)
 
         log = open(self.mesh.meshPath+fileName+"_log.txt","w")
-        log.write("rho="+self.fluid.rho+
-                  "\nk="+self.fluid.k+
-                  "\nnPow="+self.fluid.nPow+
-                  "\ntau0="+self.fluid.tau0+
-                  "\neta0="+self.fluid.eta0+
-                  "\netaInf="+self.fluid.etaInf+
-                  "\nts="+self.fluid.ts)
+        log.write("rho="+str(self.fluid.rho)+
+                  "\nk="+str(self.fluid.k)+
+                  "\nnPow="+str(self.fluid.nPow)+
+                  "\ntau0="+str(self.fluid.tau0)+
+                  "\neta0="+str(self.fluid.eta0)+
+                  "\netaInf="+str(self.fluid.etaInf)+
+                  "\nts="+str(self.fluid.ts))
         log.write("\nTotal running time: %dh:%dmin:%ds \n" % (hours, mins, secs))
         log.close()
 
         return
-
-
-
-        
-    
-
-
