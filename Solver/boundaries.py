@@ -42,7 +42,7 @@ class Boundaries:
 
         if self.inletCondition == 1:
             if self.mesh.Dim == 3:
-                UinVector = Constant((self.Uin, 0.0, 0.0))
+                UinVector = Constant((self.Uin, 0.0, 0.0)) #TODO Realizar tupla como parametro de entrada para evitar marretar direçao X
             elif self.mesh.Dim == 2:
                 UinVector = Constant((self.Uin, 0.0))
 

@@ -27,11 +27,16 @@ def eta(k,nPow,u):
 
 class Solver:
     def __init__(self, mesh,fluid, boundaries):
+        #TODO Criar classe Problem para receber o msh fluid e coundaries e definir a fisica do problema
+        #TODO Retornar apenas o problemU0 para o SOlver apenas resolver o problema
+        #TODO colocar as funçoes fora da classe, para dentro da classe
+
 
         self.mesh = mesh
         self.fluid = fluid
         self.boundaries = boundaries
 
+        #TODO Colocar como parametro do SOLVER, no parametro da classe
         ## Solver Parameters
         self.nonlinearSolver = "newton"
         self.absTol = 1e-9
@@ -59,7 +64,8 @@ class Solver:
 
         a01 = (inner(TT(self.u,self.p,eta(self.fluid.k,1,self.u)),DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
-                                     
+        #TODO testar self.mesh.ds([2,3]), com uma malha com mais de 1 outlet/inlet
+            
         L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.outletBCs[0]]) # Outlet Pressure
             # + inner(rho*fb(inputs),v)*dx()   # Gravity
 
@@ -77,6 +83,7 @@ class Solver:
 
         # Problem and Solver definitions
         problemU0 = NonlinearVariationalProblem(F0,self.w,self.boundaries.bcs,J0)
+        #! Daqui pra cima mudar para Classe Problem
         solverU0 = NonlinearVariationalSolver(problemU0)
             # # Solver Parameters
         prmU0 = solverU0.parameters 
@@ -116,6 +123,7 @@ class Solver:
 
         # Problem and Solver definitions
         problemU0 = NonlinearVariationalProblem(F0,self.w,self.boundaries.bcs,J0)
+        #! Aqui tambem
         solverU0 = NonlinearVariationalSolver(problemU0)
         # # Solver Parameters
         prmU0 = solverU0.parameters 
@@ -154,6 +162,7 @@ class Solver:
                   "\netaInf="+str(self.fluid.etaInf)+
                   "\nts="+str(self.fluid.ts))
         log.write("\nTotal running time: %dh:%dmin:%ds \n" % (hours, mins, secs))
+        #TODO Escrever numero de núcleos
         log.close()
 
         return
