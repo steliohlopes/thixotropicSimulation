@@ -64,13 +64,14 @@ class Solver:
 
         a01 = (inner(TT(self.u,self.p,eta(self.fluid.k,1,self.u)),DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
-        #TODO testar self.mesh.ds([2,3]), com uma malha com mais de 1 outlet/inlet
-            
-        L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.outletBCs[0]]) # Outlet Pressure
+
+        outletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.outletBCs if key in self.mesh.subdomains)    
+        L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(outletBCsIndex) # Outlet Pressure
             # + inner(rho*fb(inputs),v)*dx()   # Gravity
 
         if self.boundaries.inletCondition == 0:
-            L01 = L01 - (self.boundaries.Pin)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.inletBCs[0]]) # Inlet Pressure 
+            inletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.inletBCs if key in self.mesh.subdomains)
+            L01 = L01 - (self.boundaries.Pin)*dot(self.mesh.n,self.v)*self.mesh.ds(inletBCsIndex) # Inlet Pressure 
 
         # Mass Conservation(Continuity)
         a02 = (self.q*div(self.u))*self.mesh.dx()
@@ -105,12 +106,14 @@ class Solver:
         
         a01 = (inner(TT(self.u,self.p,eta(self.fluid.k,self.fluid.nPow,self.u)),DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
-                                     
-        L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.outletBCs[0]]) # Outlet Pressure
+
+        outletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.outletBCs if key in self.mesh.subdomains)                             
+        L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(outletBCsIndex) # Outlet Pressure
             # + inner(rho*fb(inputs),v)*dx()   # Gravity
 
         if self.boundaries.inletCondition == 0:
-            L01 = L01 - (self.boundaries.Pin)*dot(self.mesh.n,self.v)*self.mesh.ds(self.mesh.subdomains[self.boundaries.inletBCs[0]]) # Inlet Pressure 
+            inletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.inletBCs if key in self.mesh.subdomains)
+            L01 = L01 - (self.boundaries.Pin)*dot(self.mesh.n,self.v)*self.mesh.ds(inletBCsIndex) # Inlet Pressure 
 
         # Mass Conservation(Continuity)
         a02 = (self.q*div(self.u))*self.mesh.dx()
