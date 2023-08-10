@@ -3,29 +3,29 @@ import sys
 import timeit
 sys.path.append("..")
 
-# Deformation Tensor
-def DD(u):
-    # Cartesian
-    D = 0.5 * (nabla_grad(u) + nabla_grad(u).T)
-    return D
-
-
-# Stress Tensor
-def TT(u, p, mu):
-    # Cartesian
-    T = 2 * mu * DD(u) - p * Identity(len(u))
-    return T
-
-
-def gammaDot(u):
-    return pow(2 * inner(DD(u), DD(u)), 0.5)
-
-
-def eta(k,nPow,u):
-    eps=DOLFIN_EPS
-    return k*pow(gammaDot(u)+eps,nPow-1)
-
 class Solver:
+    # Deformation Tensor
+    def DD(self, u):
+        # Cartesian
+        D = 0.5 * (nabla_grad(u) + nabla_grad(u).T)
+        return D
+
+
+    # Stress Tensor
+    def TT(self, u, p, mu):
+        # Cartesian
+        T = 2 * mu * self.DD(u) - p * Identity(len(u))
+        return T
+
+
+    def gammaDot(self, u):
+        return pow(2 * inner(self.DD(u), self.DD(u)), 0.5)
+
+
+    def eta(self, k,nPow,u):
+        eps=DOLFIN_EPS
+        return k*pow(self.gammaDot(u)+eps,nPow-1)
+    
     def __init__(self, mesh,fluid, boundaries):
         #TODO Criar classe Problem para receber o msh fluid e coundaries e definir a fisica do problema
         #TODO Retornar apenas o problemU0 para o SOlver apenas resolver o problema
@@ -62,7 +62,7 @@ class Solver:
         if wini != None:
             self.w = wini
 
-        a01 = (inner(TT(self.u,self.p,eta(self.fluid.k,1,self.u)),DD(self.v)))*self.mesh.dx()
+        a01 = (inner(self.TT(self.u,self.p,self.eta(self.fluid.k,1,self.u)),self.DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
 
         outletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.outletBCs if key in self.mesh.subdomains)    
@@ -104,7 +104,7 @@ class Solver:
         if wini != None:
             self.w = wini
         
-        a01 = (inner(TT(self.u,self.p,eta(self.fluid.k,self.fluid.nPow,self.u)),DD(self.v)))*self.mesh.dx()
+        a01 = (inner(self.TT(self.u,self.p,self.eta(self.fluid.k,self.fluid.nPow,self.u)),self.DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
 
         outletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.outletBCs if key in self.mesh.subdomains)                             
