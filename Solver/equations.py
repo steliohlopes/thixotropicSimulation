@@ -31,6 +31,8 @@ class Solver:
         return self.problem.w
     
     def SaveSimulationData(self,filePath,fileName):
+        comm = MPI.comm_world
+        num_procs = comm.Get_size()
         (self.u1, self.p1) = self.problem.w.leaf_node().split()
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
@@ -54,8 +56,8 @@ class Solver:
                   "\neta0="+str(self.problem.fluid.eta0)+
                   "\netaInf="+str(self.problem.fluid.etaInf)+
                   "\nts="+str(self.problem.fluid.ts))
-        log.write("\nTotal running time: %dh:%dmin:%ds \n" % (hours, mins, secs))
-        #TODO Escrever numero de núcleos
+        log.write("\nTotal running time: %dh:%dmin:%ds" % (hours, mins, secs))
+        log.write("\nNumber of processing cores utilized for the simulation: %d" % (num_procs))
         log.close()
 
         return
