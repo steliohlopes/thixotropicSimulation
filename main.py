@@ -2,7 +2,8 @@ from PreProcessing.mesh import FiniteElementMesh
 from ProblemInputs import Fluid
 from Solver.boundaries import Boundaries
 from Solver.equations import Solver
-meshPath = "PreProcessing/PipeFlow/"
+from Solver.problem import Problem
+meshPath = "/home/lmmp/thixotropicSimulation/PreProcessing/PipeFlow/"
 meshFile = "PipeFlow"
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
@@ -21,7 +22,11 @@ fluid = Fluid(
         etaInf=64.1,
         ts=663
         )
+problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
+problem.NewtonianEquation()
 
-newtonianTest = Solver(mesh=mesh,fluid=fluid,boundaries=boundaries)
-newtonianTest.PowerLawSolver()
+newtonianTest = Solver(problem)
+newtonianTest.SimulateEquation()
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowNewtonian")
+
 
