@@ -5,7 +5,7 @@ sys.path.append("..")
 
 
 class Boundaries:
-    def __init__(self, mesh, Pin=None, Uin=None, Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"]):
+    def __init__(self, mesh, Pin=None, UinVector=None, Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"]):
         ###########################################
         # inletCondition = 0 -> Constant inlet Pressure Condition
         # inletCondition = 1 -> Constant inlet X Velocity  Condition
@@ -13,7 +13,7 @@ class Boundaries:
 
         self.mesh = mesh
         self.Pin = Pin
-        self.Uin = Uin
+        self.UinVector = UinVector
         self.inletBCs = inletBCs
         self.outletBCs = outletBCs
         self.noSlipBCs=noSlipBCs
@@ -22,7 +22,7 @@ class Boundaries:
 
         if Pin!=None:
             self.inletCondition=0
-        elif Uin != None:
+        elif UinVector != None:
             self.inletCondition=1
 
         if self.mesh.Dim == 3:
@@ -41,16 +41,11 @@ class Boundaries:
             )
 
         if self.inletCondition == 1:
-            if self.mesh.Dim == 3:
-                UinVector = Constant((self.Uin, 0.0, 0.0)) #TODO Realizar tupla como parametro de entrada para evitar marretar direçao X
-            elif self.mesh.Dim == 2:
-                UinVector = Constant((self.Uin, 0.0))
-
             for sub in self.inletBCs:
                 self.bcs.append(
                     DirichletBC(
                         self.mesh.functionSpace.sub(0),
-                        UinVector,
+                        Constant(self.UinVector),
                         self.mesh.mf,
                         self.mesh.subdomains[sub],
                     )
