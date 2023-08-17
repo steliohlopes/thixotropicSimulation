@@ -1,6 +1,9 @@
 from dolfin import *
 import sys
 sys.path.append("..")
+from math import exp
+
+
 
 class Problem:
     def __init__(self, mesh,fluid, boundaries):
@@ -11,14 +14,14 @@ class Problem:
         ##### Functions
         ## Trial and Test function(s)
         self.dw = TrialFunction(self.mesh.functionSpace)
-        (self.v, self.q) = TestFunctions(self.mesh.functionSpace)
+        (self.v, self.q,self.s) = TestFunctions(self.mesh.functionSpace)
         self.w = Function(self.mesh.functionSpace)
 
         # Split into Velocity and Pressure
         if  self.mesh.Dim == 3:
-            (self.u, self.p) = (as_vector((self.w[0], self.w[1], self.w[2])), self.w[3])
+            (self.u, self.p, self.f) = (as_vector((self.w[0], self.w[1], self.w[2])), self.w[3], self.w[4])
         elif  self.mesh.Dim == 2:
-            (self.u, self.p) = (as_vector((self.w[0], self.w[1])), self.w[2])
+            (self.u, self.p, self.f) = (as_vector((self.w[0], self.w[1])), self.w[2], self.w[3])
     
     # Deformation Tensor
     def DD(self, u):
@@ -39,7 +42,16 @@ class Problem:
 
 
     def eta(self, k,nPow,u):
-        return k*pow(self.gammaDot(u)+DOLFIN_EPS,nPow-1)   
+        return k*pow(self.gammaDot(u)+DOLFIN_EPS,nPow-1)
+    
+    def sigmoid(self,x):
+        a=50000
+        H = 1/(1+exp(-a*x))
+        return H
+    
+    def phieq(self):
+        return
+
 
     def NewtonianEquation(self,wini = None):
         if wini != None:
@@ -60,6 +72,9 @@ class Problem:
         a02 = (self.q*div(self.u))*self.mesh.dx()
         L02 = 0
 
+        #Fluidity
+        a03 = (self.u*grad(self.f)+self.sigmoid(self.f-self.feq))
+        L03 = 0 
         # Complete Weak Form
         F0 = (a01 + a02) - (L01 + L02)
         # Jacobian Matrix
