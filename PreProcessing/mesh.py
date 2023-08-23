@@ -111,6 +111,7 @@ class FiniteElementMesh:
         # Get Element Shape: Triangle, etc...
         self.elementShape = self.meshObj.ufl_cell()
         self.Dim =self.meshObj.geometric_dimension()
+        self.h = CellDiameter(self.meshObj)
 
         # Define any measure associated with domain and subdomains
         self.dx = Measure("dx", domain=self.meshObj, subdomain_data=self.cf)
