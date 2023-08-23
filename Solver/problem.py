@@ -14,7 +14,7 @@ class Problem:
         ##### Functions
         ## Trial and Test function(s)
         self.dw = TrialFunction(self.mesh.functionSpace)
-        (self.v, self.q,self.s) = TestFunctions(self.mesh.functionSpace)
+        (self.v, self.q,self.m) = TestFunctions(self.mesh.functionSpace)
         self.w = Function(self.mesh.functionSpace)
 
         # Split into Velocity and Pressure
@@ -49,7 +49,18 @@ class Problem:
         H = 1/(1+exp(-a*x))
         return H
     
-    def phieq(self):
+    def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal):
+        sigma = pow(0.5*tr(pow(self.TT(u,p,(1/phiLocal)),2)),0.5)
+        b = (pow(sigma/k,(1/nPow))/sigma)
+        return b/((phiInf-phi0)+b)
+    
+    def Tc(self):
+        return
+    
+    def Ta(self):
+        return
+    
+    def S(self):
         return
 
 
@@ -72,9 +83,6 @@ class Problem:
         a02 = (self.q*div(self.u))*self.mesh.dx()
         L02 = 0
 
-        #Fluidity
-        a03 = (self.u*grad(self.f)+self.sigmoid(self.f-self.feq))
-        L03 = 0 
         # Complete Weak Form
         F0 = (a01 + a02) - (L01 + L02)
         # Jacobian Matrix
@@ -106,6 +114,47 @@ class Problem:
 
         # Complete Weak Form
         F0 = (a01 + a02) - (L01 + L02)
+        # Jacobian Matrix
+        J0 = derivative(F0,self.w,self.dw)
+
+        # Problem and Solver definitions
+        self.problemU0 = NonlinearVariationalProblem(F0,self.w,self.boundaries.bcs,J0)
+
+        return self.problemU0
+    
+    def ThixotropicEquation(self,wini = None):
+        if wini != None:
+            self.w = wini
+
+        a01 = (inner(self.TT(self.u,self.p,self.eta(self.fluid.k,self.fluid.nPow,self.u)),self.DD(self.v)))*self.mesh.dx()
+        # + (rho*dot(dot(u,grad(u)),v) 
+
+        outletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.outletBCs if key in self.mesh.subdomains)                             
+        L01 =  - (self.boundaries.Pout)*dot(self.mesh.n,self.v)*self.mesh.ds(outletBCsIndex) # Outlet Pressure
+            # + inner(rho*fb(inputs),v)*dx()   # Gravity
+
+        if self.boundaries.inletCondition == 0:
+            inletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.inletBCs if key in self.mesh.subdomains)
+            L01 = L01 - (self.boundaries.Pin)*dot(self.mesh.n,self.v)*self.mesh.ds(inletBCsIndex) # Inlet Pressure 
+
+        # Mass Conservation(Continuity)
+        a02 = (self.q*div(self.u))*self.mesh.dx()
+        L02 = 0
+
+        #Fluidity
+        a03 = (
+            self.u*grad(self.f)+
+            self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
+            (self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))/self.Tc()-
+            (1-self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)))*
+            self.S()/(self.Ta()/self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
+            pow((self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)-self.f),(self.S()+1)/self.S())*
+            pow(self.f,(self.S()-1)/self.S())
+               )*self.m*self.mesh.dx()
+        L03 = 0 
+
+        # Complete Weak Form
+        F0 = (a01 + a02 + a03) - (L01 + L02 + L03)
         # Jacobian Matrix
         J0 = derivative(F0,self.w,self.dw)
 
