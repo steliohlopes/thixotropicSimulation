@@ -44,15 +44,17 @@ class Problem:
     def eta(self, k,nPow,u):
         return k*pow(self.gammaDot(u)+DOLFIN_EPS,nPow-1)
     
-    def sigmoid(self,x):
-        a=50000
-        H = 1/(1+exp(-a*x))
-        return H
+    def sigmoid(self,field):
+        # a=50000
+        f = interpolate(Expression("1/(1+exp(-50000*field))" , field = field))
+        # H = 1/(1+exp(-a*x))
+        return f
     
     def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal):
-        sigma = pow(0.5*tr(pow(self.TT(u,p,(1/phiLocal)),2)),0.5)
+        sigma = pow(0.5*tr((self.TT(u,p,(1/phiLocal))*(self.TT(u,p,(1/phiLocal))).T)),0.5)
         b = (pow(sigma/k,(1/nPow))/sigma)
-        return b/((phiInf-phi0)+b)
+        PHIeq = b/((phiInf-phi0)+b)
+        return PHIeq
     
     def Tc(self):
         tc = 663
@@ -150,7 +152,7 @@ class Problem:
 
         #Fluidity
         a03 = (
-            self.u*grad(self.f)+
+            inner(self.u,grad(self.f))+
             self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
             (self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))/self.Tc()-
             
