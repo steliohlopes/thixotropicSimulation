@@ -1,5 +1,5 @@
 class Fluid:
-    def __init__(self, rho=None, k=None, nPow=None, tau0=None, eta0=None, etaInf=None, ts=None):
+    def __init__(self, rho=None, k=None, nPow=None, tau0=None, eta0=None, etaInf=None, ts=None, phi0=None, phiInf=None):
 
         ## Rheology - Modified SMD (Souza Mendes e Dutra (2004)) + Cure(tauY(t))
         # Input Variables
@@ -10,6 +10,8 @@ class Fluid:
         self.eta0 = eta0  # Viscosity Value for Low shear rates
         self.etaInf = etaInf  # Equilibrium Viscosity(Newtonian Plato: Lowgh shear rates)
         self.ts = ts  # Caracteristic viscosity buildup time
+        self.phi0 = phi0
+        self.phiInf = phiInf
 
     @classmethod
     def from_file(cls, file_path):
