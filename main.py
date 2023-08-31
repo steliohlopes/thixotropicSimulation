@@ -15,12 +15,14 @@ boundaries = Boundaries(mesh=mesh, Pin=1)
 
 fluid = Fluid(
         rho=1000,
-        k=0.1,
+        k=1,
         nPow=0.7,
         tau0=6.21358,
         eta0=0.001,
         etaInf=64.1,
-        ts=663
+        ts=663,
+        phi0=0.001,
+        phiInf=64.1
         )
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 # problem.NewtonianEquation()
