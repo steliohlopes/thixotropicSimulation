@@ -46,8 +46,9 @@ class Problem:
     
     def sigmoid(self,field):
         # a=50000
-        f = interpolate(Expression("1/(1+exp(-50000*field))" , field = field))
+        f_expr = Expression("1/(1+exp(-5000*field))", field=field, degree=1)
         # H = 1/(1+exp(-a*x))
+        f = interpolate(f_expr, field.function_space())
         return f
     
     def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal):
@@ -153,9 +154,8 @@ class Problem:
         #Fluidity
         a03 = (
             inner(self.u,grad(self.f))+
-            self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
-            (self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))/self.Tc()-
-            
+            inner((self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))/self.Tc(),
+             self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)))  -
             (1-self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)))*
             self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))/(self.Ta()/self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
             pow((self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)-self.f),(self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))+1)/self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)))*
