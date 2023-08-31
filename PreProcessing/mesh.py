@@ -17,6 +17,9 @@ class FiniteElementMesh:
         # Pressure
         self.pressureElementfamily = "Lagrange"
         self.pressureElementOrder = 1
+        # Fluidity
+        self.fluidityElementfamily = "Lagrange"
+        self.fluidityElementOrder = 1
 
         # Read .msh File
         fid = open(self.meshPath + self.meshFile + ".msh", "r")
@@ -127,7 +130,53 @@ class FiniteElementMesh:
         self.Pel = FiniteElement(
             self.pressureElementfamily, self.elementShape, self.pressureElementOrder
         )  # Pressure field
-        self.UPel = MixedElement([self.Uel, self.Pel])
+        self.Fel = FiniteElement(
+            self.fluidityElementfamily, self.elementShape, self.fluidityElementOrder
+        )  # Pressure field
+        self.UPel = MixedElement([self.Uel, self.Pel,self.Fel])
+
+        # Function Spaces: Flow
+        # Mixed Function Space: Pressure and Velocity
+        self.functionSpace = FunctionSpace(self.meshObj, self.UPel)
+
+    def createMeshObject2D(self):
+        self.meshObj = Mesh()
+
+        with XDMFFile(self.meshPath + "mesh.xdmf") as infile:
+            infile.read(self.meshObj)
+        mvc = MeshValueCollection("size_t", self.meshObj, 1)
+        with XDMFFile(self.meshPath + "mf.xdmf") as infile:
+            infile.read(mvc, "name_to_read")
+        self.mf = cpp.mesh.MeshFunctionSizet(self.meshObj, mvc)
+
+        mvc2 = MeshValueCollection("size_t", self.meshObj, 2)
+        with XDMFFile(self.meshPath + "mesh.xdmf") as infile:
+            infile.read(mvc2, "name_to_read")
+        self.cf = cpp.mesh.MeshFunctionSizet(self.meshObj, mvc2)
+
+        # Get Element Shape: Triangle, etc...
+        self.elementShape = self.meshObj.ufl_cell()
+        self.Dim =self.meshObj.geometric_dimension()
+        self.h = CellDiameter(self.meshObj)
+
+        # Define any measure associated with domain and subdomains
+        self.dx = Measure("dx", domain=self.meshObj, subdomain_data=self.cf)
+        self.ds = Measure("ds", domain=self.meshObj, subdomain_data=self.mf)
+
+        # Vectors Normal to the Mesh
+        self.n = FacetNormal(self.meshObj)
+
+        # Set Mesh Elements
+        self.Uel = VectorElement(
+            self.velocityElementfamily, self.elementShape, self.velocityElementOrder
+        )  # Velocity vector field
+        self.Pel = FiniteElement(
+            self.pressureElementfamily, self.elementShape, self.pressureElementOrder
+        )  # Pressure field
+        self.Fel = FiniteElement(
+            self.fluidityElementfamily, self.elementShape, self.fluidityElementOrder
+        )  # Pressure field
+        self.UPel = MixedElement([self.Uel, self.Pel,self.Fel])
 
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
