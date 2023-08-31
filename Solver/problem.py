@@ -55,16 +55,13 @@ class Problem:
         return b/((phiInf-phi0)+b)
     
     def Tc(self):
-        tc = 663
-        return tc
+        return
     
     def Ta(self):
-        ta = 200
-        return ta
+        return
     
-    def S(self,phieq):
-        s = (8/(exp(phieq/0.09)-1))+1.2
-        return s
+    def S(self):
+        return
 
 
     def NewtonianEquation(self,wini = None):
@@ -85,10 +82,6 @@ class Problem:
         # Mass Conservation(Continuity)
         a02 = (self.q*div(self.u))*self.mesh.dx()
         L02 = 0
-
-        # Mass Conservation(Continuity)
-        a03 = self.f
-        L03 = 1/self.fluid.k
 
         # Complete Weak Form
         F0 = (a01 + a02) - (L01 + L02)
@@ -153,11 +146,10 @@ class Problem:
             self.u*grad(self.f)+
             self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
             (self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))/self.Tc()-
-            
             (1-self.sigmoid(self.f-self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)))*
-            self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))/(self.Ta()/self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
-            pow((self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)-self.f),(self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))+1)/self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)))*
-            pow(self.f,(self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))-1)/self.S(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)))
+            self.S()/(self.Ta()/self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))*
+            pow((self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)-self.f),(self.S()+1)/self.S())*
+            pow(self.f,(self.S()-1)/self.S())
                )*self.m*self.mesh.dx()
         L03 = 0 
 
