@@ -1,9 +1,6 @@
 from dolfin import *
 import sys
 sys.path.append("..")
-from math import exp
-
-
 
 class Problem:
     def __init__(self, mesh,fluid, boundaries):
@@ -45,11 +42,9 @@ class Problem:
         return k*pow(self.gammaDot(u)+DOLFIN_EPS,nPow-1)
     
     def sigmoid(self,field):
-        # a=50000
-        f_expr = Expression("1/(1+exp(-5000*field))", field=field, degree=1)
-        # H = 1/(1+exp(-a*x))
-        f = interpolate(f_expr, field.function_space())
-        return f
+        a=50000
+        H = 1/(1+exp(-a*field))
+        return H
     
     def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal):
         sigma = pow(0.5*tr((self.TT(u,p,(1/phiLocal))*(self.TT(u,p,(1/phiLocal))).T)),0.5)
