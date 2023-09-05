@@ -46,11 +46,19 @@ class Problem:
         H = 1/(1+exp(-a*field))
         return H
     
-    def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal):
-        sigma = pow(0.5*tr((self.TT(u,p,(1/phiLocal))*(self.TT(u,p,(1/phiLocal))).T)),0.5)
-        b = (pow(sigma/k,(1/nPow))/sigma)
-        PHIeq = b/((phiInf-phi0)+b)
-        return PHIeq
+    def dimensionless_viscosity(self,phiLocal,phi0,phiInf):
+        return (phiLocal-phi0)/(phiInf-phi0)
+    
+    #TODO Foi corrigido a função phieq, para retornar a fluidez equivalente, para as equações de ta,s, deve ser inserido a fluidezEq adimensional
+    #TODO que por ser feita pela função dimensionless_viscosity
+    #! MUDAR s, e as equações de tixotropia para a nova forma, utilizando a fluidez adimensiona e/ou dimensional, verificar!!!
+    def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
+        sigmaDev = self.TT(u,p,(1/phiLocal))-((Identity(len(u)) * tr(self.TT(u,p,(1/phiLocal))))/3)
+        sigma = pow( pow(norm(sigmaDev),2)/2 ,0.5)
+        b = pow(abs(sigma-sigmay)/k,1/nPow)/sigma
+        dif = phiInf-phi0
+        H = self.sigmoid(sigma-sigmay)
+        return phi0 + ((dif*b)/(dif+b))*H
     
     def Tc(self):
         tc = 663
@@ -59,7 +67,7 @@ class Problem:
     def Ta(self):
         ta = 200
         return ta
-    
+        
     def S(self,phieq):
         s = (8/(exp(phieq/0.09)-1))+1.2
         return s
@@ -131,7 +139,7 @@ class Problem:
         if wini != None:
             self.w = wini
 
-        a01 = (inner(self.TT(self.u,self.p,self.eta(self.fluid.k,self.fluid.nPow,self.u)),self.DD(self.v)))*self.mesh.dx()
+        a01 = (inner(self.TT(self.u,self.p,(1/self.f)),self.DD(self.v)))*self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v) 
 
         outletBCsIndex = tuple(self.mesh.subdomains[key] for key in self.boundaries.outletBCs if key in self.mesh.subdomains)                             
