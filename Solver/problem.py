@@ -68,8 +68,8 @@ class Problem:
         ta = 200
         return ta
         
-    def S(self,phieq):
-        s = (8/(exp(phieq/0.09)-1))+1.2
+    def S(self,dimensionless_phieq):
+        s = (8/(exp(dimensionless_phieq/0.09)-1))+1.2
         return s
 
 
