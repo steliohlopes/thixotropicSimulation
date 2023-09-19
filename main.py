@@ -25,13 +25,18 @@ fluid = Fluid(
         phiInf=64.1
         )
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
-# problem.NewtonianEquation()
-# newtonianTest = Solver(problem)
-# newtonianTest.SimulateEquation()
 
-# problem.PowerLawEquation()
-# newtonianTest.SimulateEquation()
-problem.ThixotropicEquation()
-tixotropicTest = Solver(problem)
-# newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ParallelPlatesNewtonian")
+problem.NewtonianEquation()
+newtonianTest = Solver(problem)
+newtonianTest.SimulateEquation()
+
+problem.PowerLawEquation()
+PowerLawTest = Solver(problem)
+PowerLawTest.SimulateEquation()
+PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DPowerLaw")
+
+# problem.ThixotropicEquation()
+# tixotropicTest = Solver(problem)
+# tixotropicTest.SimulateEquation()
+# tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="ParallelPlatesNewtonian")
 
