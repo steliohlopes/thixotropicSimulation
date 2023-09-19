@@ -33,14 +33,16 @@ class Solver:
     def SaveSimulationData(self,filePath,fileName):
         comm = MPI.comm_world
         num_procs = comm.Get_size()
-        (self.u1, self.p1) = self.problem.w.leaf_node().split()
+        (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
+        self.f1.rename("Fluidity", "")
         Simulation_file = XDMFFile(filePath+fileName+".xdmf")
         Simulation_file.parameters["flush_output"] = True
         Simulation_file.parameters["functions_share_mesh"]= True
         Simulation_file.write(self.u1, 0.0)
         Simulation_file.write(self.p1, 0.0)
+        Simulation_file.write(self.f1, 0.0)
 
         self.stop = timeit.default_timer()
         total_time = self.stop - self.start
