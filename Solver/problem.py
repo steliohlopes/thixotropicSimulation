@@ -51,7 +51,7 @@ class Problem:
     
     def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
         sigmaDev = self.TT(u,p,(1/phiLocal))-((Identity(len(u)) * tr(self.TT(u,p,(1/phiLocal))))/3)
-        sigma = pow( pow(norm(sigmaDev),2)/2 ,0.5) #!ESTA DANDO ERRO AQUI!!!!!
+        sigma = pow( pow(sigmaDev,2)/2 ,0.5) 
         b = pow(abs(sigma-sigmay)/k,1/nPow)/sigma
         dif = phiInf-phi0
         H = self.sigmoid(sigma-sigmay)
