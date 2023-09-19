@@ -46,11 +46,12 @@ class Problem:
         H = 1/(1+exp(-a*field))
         return H
     
-    def dimensionless_viscosity(self,phiLocal,phi0,phiInf):
+    def normalized_fluidity(self,phiLocal,phi0,phiInf):
         return (phiLocal-phi0)/(phiInf-phi0)
     
     def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
         sigmaDev = self.TT(u,p,(1/phiLocal))-((Identity(len(u)) * tr(self.TT(u,p,(1/phiLocal))))/3)
+        # sigmaDev = (nabla_grad(u) + nabla_grad(u).T)/phiLocal
         sigma = pow( pow(sigmaDev,2)/2 ,0.5) 
         b = pow(abs(sigma-sigmay)/k,1/nPow)/sigma
         dif = phiInf-phi0
@@ -70,7 +71,7 @@ class Problem:
         return s
 
 
-    def NewtonianEquation(self,wini = None):
+    def NewtonianEquation(self,wini = None): 
         if wini != None:
             self.w = wini
 
@@ -89,12 +90,12 @@ class Problem:
         a02 = (self.q*div(self.u))*self.mesh.dx()
         L02 = 0
 
-        # Mass Conservation(Continuity)
-        a03 = self.f
-        L03 = 1/self.fluid.k
+        # Fluidity
+        a03 = (self.eta(self.fluid.k,1,self.u)*self.f-1)*self.m*self.mesh.dx()
+        L03 = 0
 
         # Complete Weak Form
-        F0 = (a01 + a02) - (L01 + L02)
+        F0 = (a01 + a02+a03) - (L01 + L02+L03)
         # Jacobian Matrix
         J0 = derivative(F0,self.w,self.dw)
 
@@ -121,9 +122,12 @@ class Problem:
         # Mass Conservation(Continuity)
         a02 = (self.q*div(self.u))*self.mesh.dx()
         L02 = 0
-
+        
+        # Fluidity
+        a03 = (self.eta(self.fluid.k,self.fluid.nPow,self.u)*self.f-1)  *self.m*self.mesh.dx()
+        L03 = 0
         # Complete Weak Form
-        F0 = (a01 + a02) - (L01 + L02)
+        F0 = (a01 + a02+a03) - (L01 + L02+L03)
         # Jacobian Matrix
         J0 = derivative(F0,self.w,self.dw)
 
@@ -152,45 +156,51 @@ class Problem:
         L02 = 0
 
         #Fluidity
-        a031=(inner(self.u,grad(self.dimensionless_viscosity(self.f,self.fluid.phi0,self.fluid.phiInf))))*self.m
+        a031=(inner(self.u,grad(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf))))*self.m
 
-        a032=(((self.dimensionless_viscosity(self.f,self.fluid.phi0,self.fluid.phiInf)-
-            self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
-            /self.Tc())* 
+        a032=(
+                (
+                    (self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)
+                     -
+            self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf)
+                    )
+            /self.Tc()
+                )
+            * 
             self.sigmoid(
-                (self.dimensionless_viscosity(self.f,self.fluid.phi0,self.fluid.phiInf)-
-                self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
-            ))*self.m
+                (self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)-
+                self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf)))
+            )*self.m
 
 
             
         a033=((1-
                 self.sigmoid(
-                    (self.dimensionless_viscosity(self.f,self.fluid.phi0,self.fluid.phiInf)-
-                    self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
+                    (self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)-
+                    self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
                 )
                )*
-            self.S(self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
-                /(self.Ta()*self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
+            self.S(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
+                /(self.Ta()*self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
             *
-            pow(self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf)-
-                self.dimensionless_viscosity(self.f,self.fluid.phi0,self.fluid.phiInf),
-                    (self.S(self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))+1)
-                    /self.S(self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
+            pow(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf)-
+                self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf),
+                    (self.S(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))+1)
+                    /self.S(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
                 )
             *
-            pow(self.dimensionless_viscosity(self.f,self.fluid.phi0,self.fluid.phiInf),
-                    (self.S(self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))-1)
-                    /self.S(self.dimensionless_viscosity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
+            pow(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf),
+                    (self.S(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))-1)
+                    /self.S(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
                 )
             )*self.m
-            
+        
         a03=(a031+a032-a033)*self.mesh.dx()
 
         L03 = 0 
 
         # Complete Weak Form
-        F0 = (a01 + a02 + a03) - (L01 + L02 + L03)
+        F0 = (a01 + a02+a03) - (L01 + L02 + L03)
         # Jacobian Matrix
         J0 = derivative(F0,self.w,self.dw)
 
