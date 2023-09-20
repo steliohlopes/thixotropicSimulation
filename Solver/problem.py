@@ -50,9 +50,9 @@ class Problem:
         return (phiLocal-phi0)/(phiInf-phi0)
     
     def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
-        sigmaDev = self.TT(u,p,(1/phiLocal))-((Identity(len(u)) * tr(self.TT(u,p,(1/phiLocal))))/3)
+        sigmaDev = self.TT(u,p,(1/phiLocal))- ((Identity(len(u)) * tr(self.TT(u,p,(1/phiLocal)))/3))
         # sigmaDev = (nabla_grad(u) + nabla_grad(u).T)/phiLocal
-        sigma = pow( pow(sigmaDev,2)/2 ,0.5) 
+        sigma = pow( inner(sigmaDev,sigmaDev.T)/2 ,0.5) 
         b = pow(abs(sigma-sigmay)/k,1/nPow)/sigma
         dif = phiInf-phi0
         H = self.sigmoid(sigma-sigmay)
@@ -195,7 +195,7 @@ class Problem:
                 )
             )*self.m
         
-        a03=(a031+a032-a033)*self.mesh.dx()
+        a03=(a031+a032-a033)*self.mesh.dx(metadata={'quadrature_degree': 3})
 
         L03 = 0 
 
