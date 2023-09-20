@@ -33,7 +33,11 @@ newtonianTest.SimulateEquation()
 problem.PowerLawEquation()
 PowerLawTest = Solver(problem)
 PowerLawTest.SimulateEquation()
-PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DPowerLaw")
+
+problem.ThixotropicEquation()
+tixotropicTest = Solver(problem)
+tixotropicTest.SimulateEquation()
+# PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DPowerLaw")
 
 # problem.ThixotropicEquation()
 # tixotropicTest = Solver(problem)
