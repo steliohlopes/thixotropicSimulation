@@ -39,7 +39,8 @@ class Problem:
 
 
     def eta(self, k,nPow,u):
-        return k*pow(self.gammaDot(u)+DOLFIN_EPS,nPow-1)
+        eps = 1e-6
+        return k*pow(self.gammaDot(u)+eps,nPow-1)
     
     def sigmoid(self,field):
         a=5
@@ -49,22 +50,14 @@ class Problem:
     def normalized_fluidity(self,phi,phi0,phiInf):
         return (phi-phi0)/(phiInf-phi0)
     
-    def phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
-        sigmaDev = self.TT(u,p,(1/phiLocal))- ((Identity(len(u)) * tr(self.TT(u,p,(1/phiLocal)))/3))
-        # sigmaDev = (nabla_grad(u) + nabla_grad(u).T)/phiLocal
-        sigma = pow( inner(sigmaDev,sigmaDev.T)/2 ,0.5) 
-        b = pow(abs(sigma-sigmay)/k,1/nPow)/sigma
-        dif = phiInf-phi0
-        H = self.sigmoid(sigma-sigmay)
-        return phi0 + ((dif*b)/(dif+b))*H
     
     def dimensionless_phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
-        sigmaDev = self.TT(u,p,(1/phiLocal))- ((Identity(len(u)) * tr(self.TT(u,p,(1/phiLocal)))/3))
-        sigma = pow( inner(sigmaDev,sigmaDev.T)/2 ,0.5) 
-        b = pow(abs(sigma-sigmay)/k,1/nPow)/sigma
+        TT = 2*self.DD(u)/(phiLocal+DOLFIN_EPS)
+        sigma = pow( tr(TT*TT)/2 ,0.5) 
+        b = pow(abs(sigma-sigmay)/k,1/nPow)/(sigma+DOLFIN_EPS)
         dif = phiInf-phi0
         H = self.sigmoid(sigma-sigmay)
-        return b*H/(dif+b)
+        return b/(dif+b)
     
     def Tc(self):
         tc = 663
@@ -213,7 +206,7 @@ class Problem:
                 )
             )*self.m
         
-        a03=(a031+a032)*self.mesh.dx(metadata={'quadrature_degree': 3})
+        a03=(a031+a032)*self.mesh.dx(metadata={'quadrature_degree': 10})
 
         L03 = 0 
 
