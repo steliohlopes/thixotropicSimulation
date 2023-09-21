@@ -42,7 +42,7 @@ class Problem:
         return k*pow(self.gammaDot(u)+DOLFIN_EPS,nPow-1)
     
     def sigmoid(self,field):
-        a=50
+        a=500
         H = 1/(1+exp(-a*field))
         return H
     
@@ -62,8 +62,8 @@ class Problem:
         tc = 663
         return tc
     
-    def Ta(self):
-        ta = 200
+    def Ta(self,dimensionless_phieq):
+        ta = 59.2*(pow((1-dimensionless_phieq),1.1)/pow(dimensionless_phieq,0.4))
         return ta
         
     def S(self,dimensionless_phieq):
@@ -156,9 +156,8 @@ class Problem:
         L02 = 0
 
         #Fluidity
-        a031=(inner(self.u,grad(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf))))*self.m
 
-        a032=(
+        a031=(
                 (
                     (self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)
                      -
@@ -174,14 +173,14 @@ class Problem:
 
 
             
-        a033=((1-
+        a032=((1-
                 self.sigmoid(
                     (self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)-
                     self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
                 )
                )*
             self.S(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
-                /(self.Ta()*self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
+                /(self.Ta(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))*self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf))
             *
             pow(self.normalized_fluidity(self.phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f),self.fluid.phi0,self.fluid.phiInf)-
                 self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf),
@@ -195,7 +194,7 @@ class Problem:
                 )
             )*self.m
         
-        a03=(a031+a032-a033)*self.mesh.dx(metadata={'quadrature_degree': 3})
+        a03=(a032)*self.mesh.dx(metadata={'quadrature_degree': 3})
 
         L03 = 0 
 
