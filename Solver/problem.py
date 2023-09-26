@@ -47,17 +47,56 @@ class Problem:
         H = 1/(1+exp(-a*field))
         return H
     
+    def dsigmoid(self,field):
+        a=5
+        dH = a*exp(-a*(field))/(pow(exp(-a*field+1),2))
+        return dH
+    
     def normalized_fluidity(self,phi,phi0,phiInf):
         return (phi-phi0)/(phiInf-phi0)
     
+    def func(self,sigma,gammadot,k,nPow,phi0,phiInf,sigmay=0):
+        
+        b = pow(abs(sigma-sigmay)/k,1/nPow)/(sigma)
+        dif = phiInf-phi0
+        phieq = b/(dif+b)
+        H = self.sigmoid(sigma-sigmay)
+        phiV = self.normalized_fluidity(gammadot/sigma,phi0,phiInf)
+        return phieq*H-phiV
+    
+    def dfunc(self,sigma,gammadot,k,nPow,phi0,phiInf,sigmay=0):
+        b = pow(abs(sigma-sigmay)/k,1/nPow)/(sigma)
+        dif = phiInf-phi0
+        phieq = b/(dif+b)
+        H = self.sigmoid(sigma-sigmay)
+
+        num = pow(1/k,1/nPow)*(phi0-phiInf)*pow(abs(sigma-sigmay),1/(nPow-2))*(nPow*pow(abs(sigma-sigmay),2)+sigma*(sigmay-sigma))
+        den = pow(1/k,1/nPow)*pow(abs(sigma-sigmay),1/(nPow))+sigma*(phiInf-phi0)
+        dphieq = num/(nPow*pow(den,2))
+        dH = self.dsigmoid(sigma-sigmay)
+        dphiV = gammadot/(pow(sigma,2)*(phi0-phiInf))
+        return phieq*dH+dphieq*H-dphiV
     
     def dimensionless_phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
-        TT = 2*self.DD(u)/(phiLocal+DOLFIN_EPS)
-        sigma = pow( tr(TT*TT)/2 ,0.5) 
-        b = pow(abs(sigma-sigmay)/k,1/nPow)/(sigma+DOLFIN_EPS)
-        dif = phiInf-phi0
-        H = self.sigmoid(sigma-sigmay)
-        return b/(dif+b)
+        D=self.DD(u)
+        gammadot = pow(2*tr(D*D),0.5)
+        sigma = sigmay + k*pow(gammadot,nPow)
+        
+        nIter=0
+        maxIter=60
+        tol = 1e-6
+        res = 2*tol
+
+        while nIter<maxIter and res>tol:
+            nIter +=1
+            phiV = gammadot/sigma
+            G = self.func(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
+            dG = self.dfunc(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
+            phiN = phiV - G*dG
+            sigma = gammadot/phiN
+            res = abs(phiN-phiV)
+
+        return self.normalized_fluidity(phiN,phi0,phiInf)
     
     def Tc(self):
         tc = 663
