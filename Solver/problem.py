@@ -1,5 +1,6 @@
 from dolfin import *
 import sys
+from ufl import tanh
 sys.path.append("..")
 
 class Problem:
@@ -43,12 +44,12 @@ class Problem:
         return k*pow(self.gammaDot(u)+eps,nPow-1)
     
     def sigmoid(self,field):
-        a=5
+        a=500
         H = 1/(1+exp(-a*field))
         return H
     
     def dsigmoid(self,field):
-        a=5
+        a=500
         dH = a*exp(-a*(field))/(pow(exp(-a*field+1),2))
         return dH
     
@@ -81,33 +82,67 @@ class Problem:
         D=self.DD(u)
         gammadot = pow(2*tr(D*D),0.5)
         sigma = sigmay + k*pow(gammadot,nPow)
-        
+        # phiV = gammadot/sigma
+        # G = self.func(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
+        # dG = self.dfunc(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
+        # phiN = phiV - G/dG
+
         nIter=0
-        maxIter=60
+        maxIter=20
         tol = 1e-6
         res = 2*tol
+        V = FunctionSpace(self.mesh.meshObj,self.mesh.Fel)
 
         while nIter<maxIter and res>tol:
             nIter +=1
-            phiV = gammadot/sigma
-            G = self.func(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
-            dG = self.dfunc(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
-            phiN = phiV - G*dG
-            sigma = gammadot/phiN
-            res = abs(phiN-phiV)
+            # # phiV = gammadot/sigma
+            # phiV = project(gammadot/sigma, V)
+            # G = self.func(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
+            # dG = self.dfunc(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
+            # # phiN = phiV - G/dG
+            # phiN = project(phiV - G/dG, V)
+            # sigma = gammadot/phiN
 
-        return self.normalized_fluidity(phiN,phi0,phiInf)
+            # # res = abs(phiN-phiV)
+            # res = errornorm(phiN, phiV,'L2')
+            # begin(str(res))
+            # begin(str(nIter<maxIter and res>tol))
+
+            g_s=(1/sigma)*pow((abs(sigma-sigmay)/k),(1/nPow))/((phiInf-phi0)+(1/sigma)*pow((abs(sigma-sigmay)/k),(1/nPow)))
+            c=500           
+            H=0.5*(1+tanh(c*(sigma-sigmay)))
+            PHI_v=gammadot/(sigma)
+            PHI_v = project(PHI_v, V)
+            G = g_s*H - (PHI_v-phi0)/(phiInf-phi0)
+            num_der=1/(gammadot)*(pow( (abs(gammadot/PHI_v-sigmay)/k),(1/nPow))) - (pow((k*nPow*PHI_v),-1))*(pow((abs(gammadot/PHI_v-sigmay)/k),(1/nPow-1)))
+            den=(phiInf-phi0)+(1/(sigma))*pow((abs(sigma-sigmay)/k),(1/nPow))
+            g_s_der= (phiInf-phi0)*num_der/(den**2)
+            H_der=0.5*c*(1-  pow((tanh(c*(sigma-sigmay))),2) )*(-gammadot/PHI_v**2)
+            G_der= g_s_der*H+g_s*H_der-1/(phiInf-phi0)
+            PHI_N = -(G)/G_der+PHI_v
+            PHI_N = project(PHI_N, V)
+            sigma=gammadot/(PHI_N)
+
+            res = errornorm(PHI_N, PHI_v,'L2')
+        
+        begin(str(norm(PHI_N,'L2') < phi0))
+        
+        if norm(PHI_N,'L2') < phi0:
+            PHI_N = project(Constant(phi0), V)
+            begin(str( norm(project((PHI_N-phi0)/(phiInf-phi0),V) ) ))
+        
+        return project((PHI_N-phi0)/(phiInf-phi0),V)
     
     def Tc(self):
         tc = 663
         return tc
     
     def Ta(self,dimensionless_phieq):
-        ta = 59.2*(pow((1-dimensionless_phieq),1.1)/pow(dimensionless_phieq,0.4))
+        ta = 59.2*(pow((1-dimensionless_phieq),1.1)/(pow(dimensionless_phieq+DOLFIN_EPS_LARGE,0.4)))
         return ta
         
     def S(self,dimensionless_phieq):
-        s = (8/(exp(dimensionless_phieq/0.09)-1))+1.2
+        s = (8/((exp((dimensionless_phieq+DOLFIN_EPS_LARGE)/0.09)-1)))+1.2
         return s
 
 
@@ -196,56 +231,56 @@ class Problem:
         L02 = 0
 
         #Fluidity
-
+        V = FunctionSpace(self.mesh.meshObj,self.mesh.Fel)
+        dimensionless_phieq = self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)
+        normalized_fluidity = project(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf),V)
+        sigmoid = project(self.sigmoid(normalized_fluidity-dimensionless_phieq),V)
+        S = project(self.S(dimensionless_phieq),V)
+        Ta = project(self.Ta(dimensionless_phieq),V)
         a031=(
-                self.sigmoid(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)
-                             -
-                             self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))
+                sigmoid
                 *
-                -   (self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)
+                -   (normalized_fluidity
                     -
-                    self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)
+                    dimensionless_phieq
                     ) /self.Tc()
             )*self.m
-
-
             
         a032=(
-                (1-self.sigmoid(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)
-                               -
-                                self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))
+                (1-sigmoid
                 )
                 *
                 (
-                    self.S(self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))
+                    S
                     /
                     (
-                        self.Ta(self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))
+                        Ta
                         *
-                        self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)
+                        dimensionless_phieq
                     )
                 )
                 *
                 (
-                    pow((self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)
+                    pow((abs(dimensionless_phieq
                          -
-                         self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf)),
-                            (self.S(self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))+1)
+                         normalized_fluidity)),
+                            (S+1)
                             /
-                            self.S(self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))
+                           S
                         )
                 )
                 *
                 (
-                    pow(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf),
-                            (self.S(self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))-1)
+                    pow(normalized_fluidity,
+                            (S-1)
                             /
-                            self.S(self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f))
+                            S
                         )
                 )
             )*self.m
         
-        a03=(a031+a032)*self.mesh.dx(metadata={'quadrature_degree': 10})
+        a03=(a031+a032)*self.mesh.dx(metadata={'quadrature_degree': 2})
+
 
         L03 = 0 
 
