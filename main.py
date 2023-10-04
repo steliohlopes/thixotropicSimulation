@@ -30,9 +30,9 @@ problem.NewtonianEquation()
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
 
-problem.PowerLawEquation()
-PowerLawTest = Solver(problem)
-PowerLawTest.SimulateEquation()
+# problem.PowerLawEquation()
+# PowerLawTest = Solver(problem)
+# PowerLawTest.SimulateEquation()
 
 problem.ThixotropicEquation()
 tixotropicTest = Solver(problem)
