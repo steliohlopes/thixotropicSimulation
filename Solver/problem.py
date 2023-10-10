@@ -127,9 +127,9 @@ class Problem:
         
         begin(str(norm(PHI_N,'L2') < phi0))
         
-        if norm(PHI_N,'L2') < phi0:
-            PHI_N = project(Constant(phi0), V)
-            begin(str( norm(project((PHI_N-phi0)/(phiInf-phi0),V) ) ))
+        # if norm(PHI_N,'L2') < phi0:
+        #     PHI_N = project(Constant(phi0), V)
+        #     begin(str( norm(project((PHI_N-phi0)/(phiInf-phi0),V) ) ))
         
         return project((PHI_N-phi0)/(phiInf-phi0),V)
     
