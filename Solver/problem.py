@@ -80,7 +80,7 @@ class Problem:
     
     def dimensionless_phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
         D=self.DD(u)
-        gammadot = pow(2*tr(D*D),0.5)
+        gammadot = pow(2*tr(D*D),0.5)+DOLFIN_EPS_LARGE
         sigma = sigmay + k*pow(gammadot,nPow)
         # phiV = gammadot/sigma
         # G = self.func(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
@@ -122,10 +122,11 @@ class Problem:
             PHI_N = -(G)/G_der+PHI_v
             PHI_N = project(PHI_N, V)
             sigma=gammadot/(PHI_N)
-
             res = errornorm(PHI_N, PHI_v,'L2')
-        
-        begin(str(norm(PHI_N,'L2') < phi0))
+
+            comm = MPI.comm_world
+            if comm.rank == 0:
+                begin(f'iteration {nIter}: r (abs) = {res:.2e} (tol = {tol})')
         
         # if norm(PHI_N,'L2') < phi0:
         #     PHI_N = project(Constant(phi0), V)
