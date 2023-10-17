@@ -12,7 +12,7 @@ Div=50;
 dx=l/Div;
 
 // Parametro de malha
-MeshFactor = 3.2e-5;
+MeshFactor = 1e-5;
 
 
 Point(1) ={L/2, R, 0,MeshFactor};
@@ -63,13 +63,11 @@ Plane Surface(1) = (1);
 
 Field[1] = Distance;
 Field[1].CurvesList = {4:53,57:106};
-// Field[1].CurvesList = {131:327:4, 407:603:4, 683:879:4,
-//     959:1155:4,117,393,669,945};
 Field[1].Sampling = 20;
 
 Field[2] = Threshold;
 Field[2].InField = 1;
-Field[2].SizeMin = MeshFactor / 3;
+Field[2].SizeMin = MeshFactor / 2;
 Field[2].SizeMax = MeshFactor;
 Field[2].DistMin = r/5;
 Field[2].DistMax = r*50;
