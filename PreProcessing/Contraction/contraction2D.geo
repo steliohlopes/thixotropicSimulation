@@ -19,19 +19,19 @@ Point(1) ={L/2, R, 0,MeshFactor};
 Point(2) = {L/2, r0, 0,MeshFactor};
 
 // Criando pontos da garganta
-For x In {-l/2:l/2:dx}
+For x In {-l/2:0:dx}
     p = newp;
     f =r + (R-r) *Sin(Pi*Fabs(x)/l); 
     Point(p) = {x*(-1),f*(-1) , 0,MeshFactor};
 EndFor
 
 p = newp;
-Point(p) = {-L/2,r0 , 0,MeshFactor};
+Point(p) = {-L/2,-r , 0,MeshFactor};
 p = newp;
-Point(p) = {-L/2,R , 0,MeshFactor};
+Point(p) = {-L/2,r , 0,MeshFactor};
 
 // Criando pontos da garganta
-For x In {-l/2:l/2:dx}
+For x In {0:l/2:dx}
     p = newp;
     f =r + (R-r) *Sin(Pi*Fabs(x)/l); 
     Point(p) = {x,f , 0,MeshFactor};
@@ -62,7 +62,7 @@ Plane Surface(1) = (1);
 //        Point         DistMin  DistMax
 
 Field[1] = Distance;
-Field[1].CurvesList = {4:53,57:106};
+Field[1].CurvesList = {3:28,31:56};
 Field[1].Sampling = 20;
 
 Field[2] = Threshold;
@@ -88,11 +88,11 @@ Field[5] = Min;
 Field[5].FieldsList = {2};
 Background Field = 5;
 
-Physical Curve("Inlet") = {55};
+Physical Curve("Inlet") = {30};
 
 Physical Curve("Outlet") = {2};
 
-Physical Curve("Wall") = {56, 54, 53, 57, 52, 58, 51, 59, 50, 60, 49, 61, 48, 62, 47, 63, 46, 64, 45, 65, 44, 66, 43, 67, 42, 68, 41, 69, 40, 70, 39, 71, 38, 72, 37, 73, 36, 74, 35, 75, 34, 76, 33, 77, 32, 78, 31, 79, 30, 80, 29, 81, 28, 82, 27, 83, 26, 84, 25, 85, 24, 86, 23, 87, 22, 88, 21, 89, 20, 90, 19, 91, 18, 92, 17, 93, 16, 94, 15, 95, 14, 96, 13, 97, 12, 98, 11, 99, 10, 100, 9, 101, 8, 102, 7, 103, 6, 104, 5, 105, 4, 106, 3, 1};
+Physical Curve("Wall") = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 1, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 29, 31};
 
 Physical Surface("Fluid") = {1};
 

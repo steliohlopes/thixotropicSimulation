@@ -80,8 +80,8 @@ class Problem:
     
     def dimensionless_phieq(self,k,nPow,phi0,phiInf,u,p,phiLocal,sigmay=0):
         D=self.DD(u)
-        gammadot = pow(2*tr(D*D),0.5)
-        sigma = sigmay + k*pow(gammadot,nPow)
+        gammadot = pow(2*tr(D*D),0.5)+DOLFIN_EPS_LARGE
+        sigma = (sigmay + k*pow(gammadot,nPow))+DOLFIN_EPS_LARGE
         # phiV = gammadot/sigma
         # G = self.func(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
         # dG = self.dfunc(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
@@ -89,7 +89,7 @@ class Problem:
 
         nIter=0
         maxIter=20
-        tol = 1e-6
+        tol = 1e-9
         res = 2*tol
         V = FunctionSpace(self.mesh.meshObj,self.mesh.Fel)
 
@@ -120,16 +120,16 @@ class Problem:
             H_der=0.5*c*(1-  pow((tanh(c*(sigma-sigmay))),2) )*(-gammadot/PHI_v**2)
             G_der= g_s_der*H+g_s*H_der-1/(phiInf-phi0)
             PHI_N = -(G)/G_der+PHI_v
+            PHI_N = conditional(lt(PHI_N,phi0),phi0,PHI_N)
+            PHI_N = conditional(gt(PHI_N,phiInf),phiInf,PHI_N)
             PHI_N = project(PHI_N, V)
             sigma=gammadot/(PHI_N)
-
             res = errornorm(PHI_N, PHI_v,'L2')
+
+            comm = MPI.comm_world
+            if comm.rank == 0:
+                begin(f'iteration {nIter}: r (abs) = {res:.2e} (tol = {tol})')
         
-        begin(str(norm(PHI_N,'L2') < phi0))
-        
-        # if norm(PHI_N,'L2') < phi0:
-        #     PHI_N = project(Constant(phi0), V)
-        #     begin(str( norm(project((PHI_N-phi0)/(phiInf-phi0),V) ) ))
         
         return project((PHI_N-phi0)/(phiInf-phi0),V)
     
