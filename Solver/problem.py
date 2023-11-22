@@ -1,6 +1,6 @@
 from dolfin import *
 import sys
-from ufl import tanh
+from ufl import (real,conditional)
 
 sys.path.append("..")
 
@@ -50,114 +50,68 @@ class Problem:
         eps = 1e-6
         return k * pow(self.gammaDot(u) + eps, nPow - 1)
 
-    def sigmoid(self, field):
-        a = 500
-        H = 1 / (1 + exp(-a * field))
-        return H
-
-    def dsigmoid(self, field):
-        a = 500
-        dH = a * exp(-a * (field)) / (pow(exp(-a * field) + 1, 2))
-        return dH
-
     def normalized_fluidity(self, phi, phi0, phiInf):
         return (phi - phi0) / (phiInf - phi0)
 
-    def func(self, sigma, gammadot, k, nPow, phi0, phiInf, sigmay=0):
-        phieq = (
-            (1 / sigma)
-            * pow((abs(sigma - sigmay) / k), (1 / nPow))
-            / (
-                (phiInf - phi0)
-                + (1 / sigma) * pow((abs(sigma - sigmay) / k), (1 / nPow))
-            )
-        )
-
-        phiTest = (gammadot / sigma - phi0) / (phiInf - phi0)
-        return phieq - phiTest
-
-    def dfunc(self, sigma, gammadot, k, nPow, phi0, phiInf, sigmay=0):
-        difsigma = sigma - sigmay
-
-        phieq = (
-            (1 / sigma)
-            * pow((abs(sigma - sigmay) / k), (1 / nPow))
-            / (
-                (phiInf - phi0)
-                + (1 / sigma) * pow((abs(sigma - sigmay) / k), (1 / nPow))
-            )
-        )
-
-        dphieq = (
-            pow(1 / k, 1 / nPow)
-            * (phiInf - phi0)
-            * difsigma
-            * (pow(abs(difsigma), 1 / (nPow - 2)))
-            * (-nPow * pow(abs(difsigma), 2) + pow(sigma, 2) - sigma * sigmay)
-        ) / (
-            nPow
-            * pow(
-                pow(1 / k, 1 / nPow) * pow(abs(difsigma), 1 / (nPow))
-                + phiInf * sigma
-                - phi0 * sigma,
-                2,
-            )
-        )
-
-        derivatephieq = phieq * self.dsigmoid(difsigma) + dphieq * self.sigmoid(difsigma)
-
-        derivatephiTest = gammadot / (pow(sigma, 2) * (phi0 - phiInf))
-
-        return derivatephieq - derivatephiTest
-
-    def dimensionless_phieq(self, k, nPow, phi0, phiInf, u, p, phiLocal, sigmay=0):
+    def dimensionless_phieq(self, k, nPow, phi0, phiInf, u, sigmay=0):
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
         D = self.DD(u)
         gammadot = pow(2 * tr(D * D), 0.5) + DOLFIN_EPS_LARGE
-        sigma = project(sigmay + k * pow(gammadot, nPow),V)
-        # phiV = gammadot/sigma
-        # G = self.func(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
-        # dG = self.dfunc(sigma,gammadot,k,nPow,phi0,phiInf,sigmay)
-        # phiN = phiV - G/dG
-        # phiV = project(gammadot/sigma, V)
+        sigma = sigmay + k * pow(gammadot, nPow)
         nIter = 0
         maxIter = 1000
-        tol = 1e-12
+        tol = 1e-9
         res = 2 * tol
 
         while nIter < maxIter and res > tol:
             nIter += 1
-            new_sigma = project(sigma - (
-                self.func(sigma, gammadot, k, nPow, phi0, phiInf, sigmay)
-            ) / (self.dfunc(sigma, gammadot, k, nPow, phi0, phiInf, sigmay)),V)
 
-            res= errornorm(sigma, new_sigma, "L2")
-            sigma = new_sigma
+            PHI_V = project((gammadot/sigma),V)
+            g_s = (PHI_V/gammadot) * pow(abs(gammadot/PHI_V-sigmay)/k,1/nPow)/((phiInf-phi0)+(PHI_V/gammadot) * pow(abs(gammadot/PHI_V-sigmay)/k,1/nPow))
+            c = 500
+            H = 1/(1+exp(-c *(gammadot/PHI_V-sigmay)))
+
+            G = g_s*H - (PHI_V-phi0)/(phiInf-phi0)
+
+            num_der = 1 / (gammadot) * (
+                pow((abs(gammadot / PHI_V - sigmay) / k), (1 / nPow))
+            ) - (pow((k * nPow * PHI_V), -1)) * (
+                pow((abs(gammadot / PHI_V - sigmay) / k), (1 / nPow - 1))
+            )
+
+            den = (phiInf - phi0) + (PHI_V / gammadot) * pow(
+                (abs(gammadot/PHI_V - sigmay) / k), (1 / nPow)
+            )
+            g_s_der = (phiInf - phi0) * num_der / (den**2)
+            H_der = 1/(1+exp(-c *(gammadot/PHI_V-sigmay)))
+            G_der = g_s_der*H+g_s*H_der-1/(phiInf-phi0)
+            PHI_N = PHI_V-G/G_der
+            PHI_N = project(conditional(lt(PHI_V, phi0), phi0, PHI_N),V)
+            
+            sigma = gammadot/PHI_N
+
+            res= errornorm(PHI_V, PHI_N, "L2")
 
             comm = MPI.comm_world
             if comm.rank == 0:
                 begin(f"iteration {nIter}: r (abs) = {res:.2e} (tol = {tol})")
 
-        PHI_N = project(((gammadot/sigma) - phi0) / (phiInf - phi0), V)
-
-        PHI_N = conditional(lt(PHI_N, 0), 0, PHI_N)
-        PHI_N = conditional(gt(PHI_N, 1), 1, PHI_N)
-        
-        return PHI_N
+        return (PHI_N - phi0) / (phiInf - phi0)
 
     def Tc(self):
         tc = 663
         return tc
 
     def Ta(self, dimensionless_phieq):
-        ta = 59.2 * (
+        ta = conditional(lt(dimensionless_phieq,1e-7),1e9,59.2 * (
             pow((1 - dimensionless_phieq), 1.1)
-            / (pow(dimensionless_phieq + DOLFIN_EPS_LARGE, 0.4))
-        )
+            / (pow(dimensionless_phieq, 0.4))
+        ))
+
         return ta
 
     def S(self, dimensionless_phieq):
-        s = (8 / ((exp((dimensionless_phieq + DOLFIN_EPS_LARGE) / 0.09) - 1))) + 1.2
+        s = conditional(lt(dimensionless_phieq,1e-3),1e9,(8 / (exp(dimensionless_phieq / 0.09) - 1)) + 1.2)
         return s
 
     def NewtonianEquation(self, wini=None):
@@ -323,9 +277,7 @@ class Problem:
                     self.fluid.nPow,
                     self.fluid.phi0,
                     self.fluid.phiInf,
-                    self.u,
-                    self.p,
-                    self.f,
+                    self.u
                 ),
             ),
             (
@@ -337,8 +289,6 @@ class Problem:
                             self.fluid.phi0,
                             self.fluid.phiInf,
                             self.u,
-                            self.p,
-                            self.f,
                         )
                     )
                     / (
@@ -349,8 +299,6 @@ class Problem:
                                 self.fluid.phi0,
                                 self.fluid.phiInf,
                                 self.u,
-                                self.p,
-                                self.f,
                             )
                         )
                         * self.dimensionless_phieq(
@@ -359,28 +307,22 @@ class Problem:
                             self.fluid.phi0,
                             self.fluid.phiInf,
                             self.u,
-                            self.p,
-                            self.f,
                         )
                     )
                 )
                 * (
                     pow(
                         (
-                            abs(
                                 self.dimensionless_phieq(
                                     self.fluid.k,
                                     self.fluid.nPow,
                                     self.fluid.phi0,
                                     self.fluid.phiInf,
                                     self.u,
-                                    self.p,
-                                    self.f,
                                 )
                                 - self.normalized_fluidity(
                                     self.f, self.fluid.phi0, self.fluid.phiInf
                                 )
-                            )
                         ),
                         (
                             self.S(
@@ -390,8 +332,6 @@ class Problem:
                                     self.fluid.phi0,
                                     self.fluid.phiInf,
                                     self.u,
-                                    self.p,
-                                    self.f,
                                 )
                             )
                             + 1
@@ -403,8 +343,6 @@ class Problem:
                                 self.fluid.phi0,
                                 self.fluid.phiInf,
                                 self.u,
-                                self.p,
-                                self.f,
                             )
                         ),
                     )
@@ -422,8 +360,6 @@ class Problem:
                                     self.fluid.phi0,
                                     self.fluid.phiInf,
                                     self.u,
-                                    self.p,
-                                    self.f,
                                 )
                             )
                             - 1
@@ -435,8 +371,6 @@ class Problem:
                                 self.fluid.phi0,
                                 self.fluid.phiInf,
                                 self.u,
-                                self.p,
-                                self.f,
                             )
                         ),
                     )
@@ -452,8 +386,6 @@ class Problem:
                         self.fluid.phi0,
                         self.fluid.phiInf,
                         self.u,
-                        self.p,
-                        self.f,
                     )
                 )
                 / self.Tc()
@@ -471,7 +403,7 @@ class Problem:
             )
         ) * self.m
 
-        a03 = (a031) * self.mesh.dx(metadata={"quadrature_degree": 2})
+        a03 = (a031-a033) * self.mesh.dx()
 
         L03 = 0
 
