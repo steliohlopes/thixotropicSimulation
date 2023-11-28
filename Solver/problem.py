@@ -260,8 +260,15 @@ class Problem:
         L02 = 0
 
         # Fluidity
-        V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
-        # dimensionless_phieq = self.dimensionless_phieq(self.fluid.k,self.fluid.nPow,self.fluid.phi0,self.fluid.phiInf,self.u,self.p,self.f)
+        # V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
+        dimensionless_phieq = self.dimensionless_phieq(
+                    self.fluid.k,
+                    self.fluid.nPow,
+                    self.fluid.phi0,
+                    self.fluid.phiInf,
+                    self.u,
+                    self.f
+                )
         # normalized_fluidity = project(self.normalized_fluidity(self.f,self.fluid.phi0,self.fluid.phiInf),V)
         # sigmoid = project(self.sigmoid(normalized_fluidity-dimensionless_phieq),V)
         # S = project(self.S(dimensionless_phieq),V)
@@ -269,85 +276,36 @@ class Problem:
         a031 = conditional(
             le(
                 self.normalized_fluidity(self.f, self.fluid.phi0, self.fluid.phiInf),
-                self.dimensionless_phieq(
-                    self.fluid.k,
-                    self.fluid.nPow,
-                    self.fluid.phi0,
-                    self.fluid.phiInf,
-                    self.u,
-                    self.f
-                ),
+                dimensionless_phieq,
             ),
             (
                 (
                     self.S(
-                        self.dimensionless_phieq(
-                            self.fluid.k,
-                            self.fluid.nPow,
-                            self.fluid.phi0,
-                            self.fluid.phiInf,
-                            self.u,
-                            self.f
-                        )
+                        dimensionless_phieq
                     )
                     / (
                         self.Ta(
-                            self.dimensionless_phieq(
-                                self.fluid.k,
-                                self.fluid.nPow,
-                                self.fluid.phi0,
-                                self.fluid.phiInf,
-                                self.u,
-                                self.f
-                            )
+                            dimensionless_phieq
                         )
-                        * self.dimensionless_phieq(
-                            self.fluid.k,
-                            self.fluid.nPow,
-                            self.fluid.phi0,
-                            self.fluid.phiInf,
-                            self.u,
-                            self.f
-                        )
+                        * dimensionless_phieq
                     )
                 )
                 * (
                     pow(
                         (
-                                self.dimensionless_phieq(
-                                    self.fluid.k,
-                                    self.fluid.nPow,
-                                    self.fluid.phi0,
-                                    self.fluid.phiInf,
-                                    self.u,
-                                    self.f
-                                )
+                                dimensionless_phieq
                                 - self.normalized_fluidity(
                                     self.f, self.fluid.phi0, self.fluid.phiInf
                                 )
                         ),
                         (
                             self.S(
-                                self.dimensionless_phieq(
-                                    self.fluid.k,
-                                    self.fluid.nPow,
-                                    self.fluid.phi0,
-                                    self.fluid.phiInf,
-                                    self.u,
-                                    self.f
-                                )
+                                dimensionless_phieq
                             )
                             + 1
                         )
                         / self.S(
-                            self.dimensionless_phieq(
-                                self.fluid.k,
-                                self.fluid.nPow,
-                                self.fluid.phi0,
-                                self.fluid.phiInf,
-                                self.u,
-                                self.f
-                            )
+                            dimensionless_phieq
                         ),
                     )
                 )
@@ -358,26 +316,12 @@ class Problem:
                         ),
                         (
                             self.S(
-                                self.dimensionless_phieq(
-                                    self.fluid.k,
-                                    self.fluid.nPow,
-                                    self.fluid.phi0,
-                                    self.fluid.phiInf,
-                                    self.u,
-                                    self.f
-                                )
+                                dimensionless_phieq
                             )
                             - 1
                         )
                         / self.S(
-                            self.dimensionless_phieq(
-                                self.fluid.k,
-                                self.fluid.nPow,
-                                self.fluid.phi0,
-                                self.fluid.phiInf,
-                                self.u,
-                                self.f
-                            )
+                            dimensionless_phieq
                         ),
                     )
                 )
@@ -386,14 +330,7 @@ class Problem:
             (
                 -(
                     self.normalized_fluidity(self.f, self.fluid.phi0, self.fluid.phiInf)
-                    - self.dimensionless_phieq(
-                        self.fluid.k,
-                        self.fluid.nPow,
-                        self.fluid.phi0,
-                        self.fluid.phiInf,
-                        self.u,
-                        self.f
-                    )
+                    - dimensionless_phieq
                 )
                 / self.Tc()
             )
