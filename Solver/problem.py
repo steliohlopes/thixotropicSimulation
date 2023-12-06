@@ -55,45 +55,58 @@ class Problem:
 
     def dimensionless_phieq(self, k, nPow, phi0, phiInf, u,localPhi ,sigmay=0):
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
+        phi  = Function(V)
+        v = TestFunction(V)
+        x = SpatialCoordinate(self.mesh.meshObj)
+
         D = self.DD(u)
-        gammadot = pow(2 * tr(D * D), 0.5) + DOLFIN_EPS_LARGE
-        # sigma = (sigmay + k * pow(gammadot, nPow))+ DOLFIN_EPS_LARGE
-        sigma = gammadot/localPhi
-        nIter = 0
-        maxIter = 1000
-        tol = 1e-9
-        res = 2 * tol
+        gammadot = pow( tr(D * D)/2, 0.5) + DOLFIN_EPS_LARGE
 
-        while nIter < maxIter and res > tol:
-            nIter += 1
 
-            g_s = (1/sigma)*pow((abs(sigma-sigmay)/k),(1/nPow))/((phiInf-phi0)+(1/sigma)*pow((abs(sigma-sigmay)/k),(1/nPow)))
-            c = 500
-            H = 0.5*(1+tanh(c*(sigma-sigmay)))
+        iniPhi = max(project(localPhi,V).vector().get_local())
+        phi  = interpolate(Expression("iniPhi", degree=1,iniPhi = iniPhi), V)
 
-            PHI_v = project((gammadot/sigma),V)
-            G = g_s*H - (PHI_v-phi0)/(phiInf-phi0)
+        g_s = (phi/gammadot)*pow((abs(gammadot/phi-sigmay)/k),(1/nPow))/((phiInf-phi0)+(phi/gammadot)*pow((abs(gammadot/phi-sigmay)/k),(1/nPow)))
+        c = 500
+        H = 0.5*(1+tanh(c*(gammadot/phi-sigmay)))
 
-            num_der=1/(gammadot)*(pow( (abs(gammadot/PHI_v-sigmay)/k),(1/nPow))) - (pow((k*nPow*PHI_v),-1))*(pow((abs(gammadot/PHI_v-sigmay)/k),(1/nPow-1)))
+        G = g_s - (phi-phi0)/(phiInf-phi0) 
 
-            den=(phiInf-phi0)+(1/(sigma))*pow((abs(sigma-sigmay)/k),(1/nPow))
+        F = G * v * dx
+        x = SpatialCoordinate(self.mesh.meshObj)
+        # F = phi**2 * v * dx - 2 * phi * v * dx - (x[0]**2 + 4 * x[0] + 3) * v * dx
 
-            g_s_der= (phiInf-phi0)*num_der/(den**2)
-            H_der=0.5*c*(1-  pow((tanh(c*(sigma-sigmay))),2) )*(-gammadot/PHI_v**2)
-            G_der= g_s_der*H+g_s*H_der-1/(phiInf-phi0)
-            PHI_N = -(G)/G_der+PHI_v
-            # PHI_N = conditional(lt(PHI_N,phi0),phi0,PHI_N)
-            # PHI_N = conditional(gt(PHI_N,phiInf),phiInf,PHI_N)
-            PHI_N = project(PHI_N, V)
-            sigma = gammadot/PHI_N
 
-            res= errornorm(PHI_v, PHI_N, "L2")
+        J = derivative(F,phi)
 
-            comm = MPI.comm_world
-            if comm.rank == 0:
-                begin(f"iteration {nIter}: r (abs) = {res:.2e} (tol = {tol})")
+        bcs = []
+        # Configurando o problema variacional
+        problem = NonlinearVariationalProblem(F, phi,bcs, J)
 
-        return (PHI_N-phi0)/(phiInf-phi0)
+        # Configurando o solucionador não linear
+        solver = NonlinearVariationalSolver(problem)
+        
+        # Configurando os parâmetros do solucionador
+        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-14
+        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-14
+        solver.parameters["newton_solver"]["maximum_iterations"] = 100
+        solver.parameters['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
+        solver.solve()
+
+        # phi.rename("Phi Eq", "")
+        # Simulation_file = XDMFFile(f'phiEq.xdmf')
+        # Simulation_file.parameters["flush_output"] = True
+        # Simulation_file.parameters["functions_share_mesh"]= True
+        # Simulation_file.write(phi, 0.0)
+
+        # ux = []
+        # j = []
+        # for i in np.linspace(-100e-6, 100e-6, 10):
+        #     j.append(i)
+        #     ux.append(phi(6e-3, i))
+        # j
+
+        return (phi-phi0)/(phiInf-phi0)
 
     def Tc(self):
         tc = 663
