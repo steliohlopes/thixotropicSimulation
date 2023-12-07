@@ -63,14 +63,14 @@ class Problem:
         gammadot = pow( tr(D * D)/2, 0.5) + DOLFIN_EPS_LARGE
 
 
-        iniPhi = max(project(localPhi,V).vector().get_local())
+        iniPhi = max(project(localPhi*(phiInf-phi0)+phi0,V).vector().get_local())
         phi  = interpolate(Expression("iniPhi", degree=1,iniPhi = iniPhi), V)
 
         g_s = (phi/gammadot)*pow((abs(gammadot/phi-sigmay)/k),(1/nPow))/((phiInf-phi0)+(phi/gammadot)*pow((abs(gammadot/phi-sigmay)/k),(1/nPow)))
         c = 500
         H = 0.5*(1+tanh(c*(gammadot/phi-sigmay)))
 
-        G = g_s - (phi-phi0)/(phiInf-phi0) 
+        G =conditional(gt(phi,2) ,g_s - (phi-phi0)/(phiInf-phi0),0 )
 
         F = G * v * dx
         x = SpatialCoordinate(self.mesh.meshObj)
@@ -93,11 +93,11 @@ class Problem:
         solver.parameters['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
         solver.solve()
 
-        # phi.rename("Phi Eq", "")
-        # Simulation_file = XDMFFile(f'phiEq.xdmf')
-        # Simulation_file.parameters["flush_output"] = True
-        # Simulation_file.parameters["functions_share_mesh"]= True
-        # Simulation_file.write(phi, 0.0)
+        phi.rename("Phi Eq", "")
+        Simulation_file = XDMFFile(f'phiEq.xdmf')
+        Simulation_file.parameters["flush_output"] = True
+        Simulation_file.parameters["functions_share_mesh"]= True
+        Simulation_file.write(phi, 0.0)
 
         # ux = []
         # j = []
@@ -163,7 +163,7 @@ class Problem:
         L02 = 0
 
         # Fluidity
-        a03 = (self.eta(self.fluid.k, 1, self.u) * self.f - 1) * self.m * self.mesh.dx()
+        a03 = (self.eta(self.fluid.k, 1, self.u) * (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0) - 1) * self.m * self.mesh.dx()
         L03 = 0
 
         # Complete Weak Form
@@ -220,7 +220,7 @@ class Problem:
 
         # Fluidity
         a03 = (
-            (self.eta(self.fluid.k, self.fluid.nPow, self.u) * self.f - 1)
+            (self.eta(self.fluid.k, self.fluid.nPow, self.u) * (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0) - 1)
             * self.m
             * self.mesh.dx()
         )
@@ -242,7 +242,7 @@ class Problem:
             self.w = wini
 
         a01 = (
-            inner(self.TT(self.u, self.p, (1 / self.f)), self.DD(self.v))
+            inner(self.TT(self.u, self.p, (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 ))), self.DD(self.v))
         ) * self.mesh.dx()
         # + (rho*dot(dot(u,grad(u)),v)
 
@@ -288,7 +288,7 @@ class Problem:
         # Ta = project(self.Ta(dimensionless_phieq),V)
         a031 = conditional(
             le(
-                self.normalized_fluidity(self.f, self.fluid.phi0, self.fluid.phiInf),
+                self.f,
                 dimensionless_phieq,
             ),
             (
@@ -307,9 +307,7 @@ class Problem:
                     pow(
                         (
                                 dimensionless_phieq
-                                - self.normalized_fluidity(
-                                    self.f, self.fluid.phi0, self.fluid.phiInf
-                                )
+                                - self.f
                         ),
                         (
                             self.S(
@@ -324,9 +322,8 @@ class Problem:
                 )
                 * (
                     pow(
-                        self.normalized_fluidity(
-                            self.f, self.fluid.phi0, self.fluid.phiInf
-                        ),
+                        self.f
+                        ,
                         (
                             self.S(
                                 dimensionless_phieq
@@ -342,7 +339,7 @@ class Problem:
             * self.m,
             (
                 -(
-                    self.normalized_fluidity(self.f, self.fluid.phi0, self.fluid.phiInf)
+                    self.f
                     - dimensionless_phieq
                 )
                 / self.Tc()
@@ -355,7 +352,7 @@ class Problem:
             inner(
                 self.u,
                 grad(
-                    self.normalized_fluidity(self.f, self.fluid.phi0, self.fluid.phiInf)
+                    self.f
                 ),
             )
         ) * self.m
