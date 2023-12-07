@@ -70,7 +70,7 @@ class Problem:
         c = 500
         H = 0.5*(1+tanh(c*(gammadot/phi-sigmay)))
 
-        G =conditional(gt(phi,2) ,g_s - (phi-phi0)/(phiInf-phi0),0 )
+        G = g_s - (phi-phi0)/(phiInf-phi0) 
 
         F = G * v * dx
         x = SpatialCoordinate(self.mesh.meshObj)
