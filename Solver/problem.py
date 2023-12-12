@@ -57,7 +57,6 @@ class Problem:
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
         phi  = Function(V)
         v = TestFunction(V)
-        x = SpatialCoordinate(self.mesh.meshObj)
 
         D = self.DD(u)
         gammadot = pow( tr(D * D)/2, 0.5) + DOLFIN_EPS_LARGE
@@ -73,9 +72,6 @@ class Problem:
         G = g_s - (phi-phi0)/(phiInf-phi0) 
 
         F = G * v * dx
-        x = SpatialCoordinate(self.mesh.meshObj)
-        # F = phi**2 * v * dx - 2 * phi * v * dx - (x[0]**2 + 4 * x[0] + 3) * v * dx
-
 
         J = derivative(F,phi)
 
