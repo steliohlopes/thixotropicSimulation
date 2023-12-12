@@ -357,9 +357,9 @@ class Problem:
             )
         ) * self.m
 
-        a03 = a033 * self.mesh.dx()
+        a03 = a031 * self.mesh.dx()
 
-        L03 = a031 * self.mesh.dx()
+        L03 = 0
 
         # Complete Weak Form
         F0 = (a01 + a02 + a03) - (L01 + L02 + L03)

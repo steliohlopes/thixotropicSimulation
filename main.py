@@ -12,7 +12,7 @@ mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 print(mesh.subdomains)
 mesh.createMeshObject2D()
 
-boundaries = Boundaries(mesh=mesh, Pin=1e4)
+boundaries = Boundaries(mesh=mesh, Pin=1e6)
 
 fluid = Fluid(
         rho=1000,
@@ -23,7 +23,7 @@ fluid = Fluid(
         etaInf=64.1,
         ts=663,
         phi0=0.001,
-        phiInf=10
+        phiInf=15
         )
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 
@@ -33,14 +33,20 @@ newtonianTest.SimulateEquation()
 newtonianTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DNewtonian")
 
 # problem.PowerLawEquation()
-# PowerLawTest = Solver(problem)
+# PowerLawTest = Solver(problem,maxIter = 100)
 # PowerLawTest.SimulateEquation()
 # PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DPowerLaw")
 
 problem.ThixotropicEquation()
-tixotropicTest = Solver(problem,absTol=1e-14)
+tixotropicTest = Solver(problem,absTol=1.5e-12,maxIter = 100)
+tixotropicTest.SimulateEquation()
+# tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DThixotropic")
+problem.fluid.k=0.30
+problem.ThixotropicEquation()
+tixotropicTest = Solver(problem,absTol=1.5e-12,maxIter = 100)
 tixotropicTest.SimulateEquation()
 tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DThixotropic")
+
 
 # problem.ThixotropicEquation()
 # tixotropicTest = Solver(problem)
