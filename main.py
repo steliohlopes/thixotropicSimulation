@@ -12,7 +12,7 @@ mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 print(mesh.subdomains)
 mesh.createMeshObject2D()
 
-boundaries = Boundaries(mesh=mesh, Pin=1e6)
+boundaries = Boundaries(mesh=mesh, Pin=1e6,Fluidityin=0.5)
 
 fluid = Fluid(
         rho=1000,
@@ -43,10 +43,10 @@ tixotropicTest = Solver(problem,absTol=1.5e-12,maxIter = 100)
 tixotropicTest.SimulateEquation()
 tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="ContractionThixotropic")
 
-problem.fluid.nPow=0.30
-problem.ThixotropicEquation()
-tixotropicTest = Solver(problem,absTol=1.5e-12,maxIter = 100)
-tixotropicTest.SimulateEquation()
-tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="ContractionThixotropic")
+# problem.fluid.nPow=0.30
+# problem.ThixotropicEquation()
+# tixotropicTest = Solver(problem,absTol=1.5e-12,maxIter = 100)
+# tixotropicTest.SimulateEquation()
+# tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="ContractionThixotropic")
 
 
