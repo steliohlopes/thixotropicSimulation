@@ -12,7 +12,7 @@ mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 print(mesh.subdomains)
 mesh.createMeshObject2D()
 
-boundaries = Boundaries(mesh=mesh, Pin=1e6,Fluidityin=0.5)
+boundaries = Boundaries(mesh=mesh, Pin=1e6)
 
 fluid = Fluid(
         rho=1000,
@@ -30,16 +30,16 @@ problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 problem.NewtonianEquation()
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ContractionNewtonian")
+# newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ContractionNewtonian")
 
 # problem.PowerLawEquation()
 # PowerLawTest = Solver(problem,maxIter = 100)
 # PowerLawTest.SimulateEquation()
 # PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="ContractionPowerLaw")
 
-
+problem.boundaries.change_parameter(Fluidityin=0.1)
 problem.ThixotropicEquation()
-tixotropicTest = Solver(problem,absTol=1.5e-12,maxIter = 100)
+tixotropicTest = Solver(problem,maxIter = 100)
 tixotropicTest.SimulateEquation()
 tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="ContractionThixotropic")
 
