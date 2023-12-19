@@ -74,7 +74,7 @@ Plane Surface(1) = (1);
 //        Point         DistMin  DistMax
 
 Field[1] = Distance;
-Field[1].CurvesList = {4:102,106:204};
+Field[1].CurvesList = {4:102,106:204,104,2};
 Field[1].Sampling = 20;
 
 Field[2] = Threshold;
@@ -96,9 +96,9 @@ Field[2].DistMax = r*40;
 // Field[4].DistMax = r*50;
 
 
-// Field[5] = Min;
-// Field[5].FieldsList = {2};
-// Background Field = 5;
+Field[5] = Min;
+Field[5].FieldsList = {2};
+Background Field = 5;
 
 Physical Curve("Inlet") = {104};
 
