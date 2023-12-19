@@ -106,7 +106,7 @@ class Problem:
 
     def Tc(self):
         tc = 663
-        return tc
+        return 1e-4
 
     def Ta(self, dimensionless_phieq):
         ta = conditional(lt(dimensionless_phieq,1e-7),1e9,59.2 * (
@@ -114,7 +114,7 @@ class Problem:
             / (pow(dimensionless_phieq, 0.4))
         ))
 
-        return ta
+        return 1e-4
 
     def S(self, dimensionless_phieq):
         s = conditional(lt(dimensionless_phieq,1e-3),1e9,(8 / (exp(dimensionless_phieq / 0.09) - 1)) + 1.2)
@@ -354,8 +354,10 @@ class Problem:
         ) * self.m
 
         a03 = a031 * self.mesh.dx()
+        # L03 = a033 * self.mesh.dx()
 
-        L03 = 0
+        L03 = dot(self.u*self.m*self.f,self.mesh.n)* self.mesh.ds(outletBCsIndex) - (div(self.u*self.m)*self.f)*self.mesh.dx()
+
 
         # Complete Weak Form
         F0 = (a01 + a02 + a03) - (L01 + L02 + L03)
