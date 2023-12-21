@@ -106,7 +106,7 @@ class Problem:
 
     def Tc(self):
         tc = 663
-        return 1e-4
+        return 1e-6
 
     def Ta(self, dimensionless_phieq):
         ta = conditional(lt(dimensionless_phieq,1e-7),1e9,59.2 * (
@@ -114,7 +114,7 @@ class Problem:
             / (pow(dimensionless_phieq, 0.4))
         ))
 
-        return 1e-4
+        return 1e-6
 
     def S(self, dimensionless_phieq):
         s = conditional(lt(dimensionless_phieq,1e-3),1e9,(8 / (exp(dimensionless_phieq / 0.09) - 1)) + 1.2)
