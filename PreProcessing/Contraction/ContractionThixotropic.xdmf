@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="TimeSeries" GridType="Collection" CollectionType="Temporal">
+      <Grid Name="mesh" GridType="Uniform">
+        <Topology NumberOfElements="104406" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="104406 3" NumberType="UInt" Format="HDF">ContractionThixotropic.h5:/Mesh/0/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="53854 2" Format="HDF">ContractionThixotropic.h5:/Mesh/0/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.000000000000000e+00" />
+        <Attribute Name="Velocity Vector" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="53854 3" Format="HDF">ContractionThixotropic.h5:/VisualisationVector/0</DataItem>
+        </Attribute>
+        <Attribute Name="Pressure" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="53854 1" Format="HDF">ContractionThixotropic.h5:/VisualisationVector/1</DataItem>
+        </Attribute>
+        <Attribute Name="Fluidity" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="53854 1" Format="HDF">ContractionThixotropic.h5:/VisualisationVector/2</DataItem>
+        </Attribute>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>
