@@ -1,5 +1,5 @@
 class Fluid:
-    def __init__(self, rho=None, k=None, nPow=None, tau0=None, eta0=None, etaInf=None, ts=None, phi0=None, phiInf=None):
+    def __init__(self, rho=None, k=None, nPow=None, tau0=None, phi0=None, phiInf=None, Tc=None, Ta=None):
 
         ## Rheology - Modified SMD (Souza Mendes e Dutra (2004)) + Cure(tauY(t))
         # Input Variables
@@ -7,12 +7,10 @@ class Fluid:
         self.k = k  # Consistency Index
         self.nPow = nPow  # Power-law Index
         self.tau0 = tau0 # Dinamic Yield Stress
-        self.eta0 = eta0  # Viscosity Value for Low shear rates
-        self.etaInf = etaInf  # Equilibrium Viscosity(Newtonian Plato: Lowgh shear rates)
-        self.ts = ts  # Caracteristic viscosity buildup time
         self.phi0 = phi0
         self.phiInf = phiInf
-
+        self.Tc = Tc
+        self.Ta = Ta
     @classmethod
     def from_file(cls, file_path):
         #.txt file exemple

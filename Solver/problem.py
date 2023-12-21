@@ -277,6 +277,11 @@ class Problem:
                     self.u,
                     self.f
                 )
+        
+        Ta = self.fluid.Ta
+        # Ta = self.Ta(dimensionless_phieq)
+        Tc = self.fluid.Tc
+        # Tc = self.Tc()
 
         a031 = conditional(
             le(
@@ -289,9 +294,7 @@ class Problem:
                         dimensionless_phieq
                     )
                     / (
-                        self.Ta(
-                            dimensionless_phieq
-                        )
+                        Ta
                         * dimensionless_phieq
                     )
                 )
@@ -334,7 +337,7 @@ class Problem:
                     self.f
                     - dimensionless_phieq
                 )
-                / self.Tc()
+                / Tc
             )
             * self.m,
         )
