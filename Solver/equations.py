@@ -55,9 +55,10 @@ class Solver:
                   "\nk="+str(self.problem.fluid.k)+
                   "\nnPow="+str(self.problem.fluid.nPow)+
                   "\ntau0="+str(self.problem.fluid.tau0)+
-                  "\neta0="+str(self.problem.fluid.eta0)+
-                  "\netaInf="+str(self.problem.fluid.etaInf)+
-                  "\nts="+str(self.problem.fluid.ts))
+                  "\nphi0="+str(self.problem.fluid.phi0)+
+                  "\nphiInf="+str(self.problem.fluid.phiInf)+
+                  "\nTa="+str(self.problem.fluid.Ta)+
+                  "\nphiTc="+str(self.problem.fluid.Tc)                  )
         log.write("\nTotal running time: %dh:%dmin:%ds" % (hours, mins, secs))
         log.write("\nNumber of processing cores utilized for the simulation: %d" % (num_procs))
         log.close()

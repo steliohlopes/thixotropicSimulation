@@ -12,18 +12,16 @@ mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 print(mesh.subdomains)
 mesh.createMeshObject2D()
 
-boundaries = Boundaries(mesh=mesh, Pin=1e6)
+boundaries = Boundaries(mesh=mesh, Pin=1e5)
 
 fluid = Fluid(
         rho=1000,
         k=1,
         nPow=0.65,
-        tau0=6.21358,
-        eta0=0.001,
-        etaInf=64.1,
-        ts=663,
         phi0=0.001,
-        phiInf=15
+        phiInf=15,
+        Ta = 1e-2,
+        Tc = 1e-2
         )
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 
