@@ -37,10 +37,35 @@ class Problem:
         D = 0.5 * (nabla_grad(u) + nabla_grad(u).T)
         return D
 
+    # Deformation Tensor du = 0 ( dx(0) )
+    def DD2(self, u):
+        #Full Deformation Tensor
+        # D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0) + u[0].dx(1))*0.5 , (u[0].dx(2) + u[2].dx(0))*0.5 ],
+        #                     [(u[1].dx(0) + u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
+        #                     [(u[0].dx(2) + u[2].dx(0))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
+
+
+        if self.mesh.Dim == 3:
+            D = sym(as_tensor([ [        0        ,     (u[0].dx(1))*0.5         , (u[0].dx(2))*0.5 ],
+                                [(u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
+                                [(u[0].dx(2))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
+            
+        elif self.mesh.Dim == 2:
+            D = sym(as_matrix([ [        0        ,     (u[0].dx(1))*0.5      ],
+                                [(u[0].dx(1))*0.5,         u[1].dx(1)        ],]))
+
+        return D
+    
     # Stress Tensor
     def TT(self, u, p, mu):
         # Cartesian
         T = 2 * mu * self.DD(u) - p * Identity(len(u))
+        return T
+    
+    # Stress Tensor DD2
+    def TT2(self, u, p, mu):
+        # Cartesian
+        T = 2 * mu * self.DD2(u) - p * Identity(len(u))
         return T
 
     def gammaDot(self, u):
@@ -127,32 +152,26 @@ class Problem:
         a01 = (
             inner(
                 self.TT(self.u, self.p, self.eta(self.fluid.k, 1, self.u)),
-                self.DD(self.v),
+                grad(self.v),
             )
         ) * self.mesh.dx()
-        # + (rho*dot(dot(u,grad(u)),v)
 
         outletBCsIndex = tuple(
             self.mesh.subdomains[key]
             for key in self.boundaries.outletBCs
             if key in self.mesh.subdomains
         )
-        L01 = (
-            -(self.boundaries.Pout)
-            * dot(self.mesh.n, self.v)
-            * self.mesh.ds(outletBCsIndex)
-        )  # Outlet Pressure
-        # + inner(rho*fb(inputs),v)*dx()   # Gravity
-
+        # Outlet Pressure
+        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , self.eta(self.fluid.k, 1, self.u))), self.v) * self.mesh.ds(outletBCsIndex)
+        
         if self.boundaries.inletCondition == 0:
             inletBCsIndex = tuple(
                 self.mesh.subdomains[key]
                 for key in self.boundaries.inletBCs
                 if key in self.mesh.subdomains
             )
-            L01 = L01 - (self.boundaries.Pin) * dot(self.mesh.n, self.v) * self.mesh.ds(
-                inletBCsIndex
-            )  # Inlet Pressure
+            # Inlet Pressure
+            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , self.eta(self.fluid.k, 1, self.u))), self.v) * self.mesh.ds(inletBCsIndex)
 
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
@@ -177,38 +196,30 @@ class Problem:
     def PowerLawEquation(self, wini=None):
         if wini != None:
             self.w = wini
-
+        
         a01 = (
             inner(
-                self.TT(
-                    self.u, self.p, self.eta(self.fluid.k, self.fluid.nPow, self.u)
-                ),
-                self.DD(self.v),
+                self.TT(self.u, self.p, self.eta(self.fluid.k, self.fluid.nPow, self.u)),
+                grad(self.v),
             )
         ) * self.mesh.dx()
-        # + (rho*dot(dot(u,grad(u)),v)
 
         outletBCsIndex = tuple(
             self.mesh.subdomains[key]
             for key in self.boundaries.outletBCs
             if key in self.mesh.subdomains
         )
-        L01 = (
-            -(self.boundaries.Pout)
-            * dot(self.mesh.n, self.v)
-            * self.mesh.ds(outletBCsIndex)
-        )  # Outlet Pressure
-        # + inner(rho*fb(inputs),v)*dx()   # Gravity
-
+        # Outlet Pressure
+        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , self.eta(self.fluid.k, self.fluid.nPow, self.u))), self.v) * self.mesh.ds(outletBCsIndex)
+        
         if self.boundaries.inletCondition == 0:
             inletBCsIndex = tuple(
                 self.mesh.subdomains[key]
                 for key in self.boundaries.inletBCs
                 if key in self.mesh.subdomains
             )
-            L01 = L01 - (self.boundaries.Pin) * dot(self.mesh.n, self.v) * self.mesh.ds(
-                inletBCsIndex
-            )  # Inlet Pressure
+            # Inlet Pressure
+            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , self.eta(self.fluid.k, self.fluid.nPow, self.u))), self.v) * self.mesh.ds(inletBCsIndex)
 
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
@@ -237,32 +248,30 @@ class Problem:
         if wini != None:
             self.w = wini
 
+
         a01 = (
-            inner(self.TT(self.u, self.p, (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 ))), self.DD(self.v))
+            inner(
+                self.TT(self.u, self.p, (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 ))),
+                grad(self.v),
+            )
         ) * self.mesh.dx()
-        # + (rho*dot(dot(u,grad(u)),v)
 
         outletBCsIndex = tuple(
             self.mesh.subdomains[key]
             for key in self.boundaries.outletBCs
             if key in self.mesh.subdomains
         )
-        L01 = (
-            -(self.boundaries.Pout)
-            * dot(self.mesh.n, self.v)
-            * self.mesh.ds(outletBCsIndex)
-        )  # Outlet Pressure
-        # + inner(rho*fb(inputs),v)*dx()   # Gravity
-
+        # Outlet Pressure
+        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )))), self.v) * self.mesh.ds(outletBCsIndex)
+        
         if self.boundaries.inletCondition == 0:
             inletBCsIndex = tuple(
                 self.mesh.subdomains[key]
                 for key in self.boundaries.inletBCs
                 if key in self.mesh.subdomains
             )
-            L01 = L01 - (self.boundaries.Pin) * dot(self.mesh.n, self.v) * self.mesh.ds(
-                inletBCsIndex
-            )  # Inlet Pressure
+            # Inlet Pressure
+            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )))), self.v) * self.mesh.ds(inletBCsIndex)
 
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
