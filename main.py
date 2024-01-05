@@ -4,12 +4,16 @@ from Solver.boundaries import Boundaries
 from Solver.equations import Solver
 from Solver.problem import Problem
 from dolfin import *
+
+comm = MPI.comm_world
+
 meshPath = "/home/lmmp/thixotropicSimulation/PreProcessing/Contraction/"
 meshFile = "Contraction"
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 # mesh.msh2hdmf2D()
-print(mesh.subdomains)
+if comm.rank ==0:
+        print(mesh.subdomains)
 mesh.createMeshObject2D()
 
 boundaries = Boundaries(mesh=mesh, Pin=1e5)
@@ -40,6 +44,7 @@ problem.ThixotropicEquation()
 tixotropicTest = Solver(problem,maxIter = 100)
 tixotropicTest.SimulateEquation()
 tixotropicTest.SaveSimulationData(filePath=meshPath,fileName="ContractionThixotropic")
+tixotropicTest.velocity_plot(R=300e-6,xpoint= 23e-3/2,filePath=meshPath)
 
 # problem.fluid.nPow=0.30
 # problem.ThixotropicEquation()

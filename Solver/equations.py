@@ -1,6 +1,8 @@
 from dolfin import *
 import sys
 import timeit
+import matplotlib.pyplot as plt
+import numpy as np
 sys.path.append("..")
 
 class Solver:    
@@ -64,3 +66,40 @@ class Solver:
         log.close()
 
         return
+    
+    def velocity_plot(self,R,xpoint,filePath):
+        comm = MPI.comm_world
+        # L length of pipe
+        # R pipe radius
+        nPow=self.problem.fluid.nPow
+        k=self.problem.fluid.k
+
+        dpdx= (self.p1(xpoint+DOLFIN_EPS_LARGE,0)-self.p1(xpoint-DOLFIN_EPS_LARGE,0))/(2*DOLFIN_EPS_LARGE)
+        
+        ux = []
+        j = []
+        uxPoiseuille = []
+        uxPowerLaw=[]
+
+        for i in np.linspace(-R*0.999, R*0.999, 200):
+            j.append(i)
+            ux.append(self.u1(xpoint,i)[0])
+            uxPoiseuille.append(-(dpdx)*(1/(4*k))*(R**2-i**2))
+            uxPowerLaw.append(nPow/(nPow+1)*(-dpdx/(2*k))**(1/nPow)*(R**((nPow+1)/nPow) -abs(i)**((nPow+1)/nPow)))
+
+        
+        plt.plot(
+            uxPowerLaw/np.mean(uxPowerLaw), j,'g',
+            uxPoiseuille/np.mean(uxPoiseuille), j,'b',
+            ux/np.mean(ux),j,'r',)
+        
+        plt.xlabel(r'$\frac{u}{\bar{u}}$', fontsize=16)
+        plt.ylabel(r'r [-]', fontsize=16)
+        plt.title('Comparison of Velocity Profiles', fontsize=16)
+        plt.legend([
+            'PowerLaw Analytical',
+            'Newtonian Analytical',
+            'Thixotropic result'])
+        plt.tight_layout()
+        plt.savefig(filePath+'Result.png')
+        plt.close()
