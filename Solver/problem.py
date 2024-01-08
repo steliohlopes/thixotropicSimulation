@@ -108,8 +108,8 @@ class Problem:
         solver = NonlinearVariationalSolver(problem)
         
         # Configurando os parâmetros do solucionador
-        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-14
-        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-14
+        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-09
+        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
         solver.parameters["newton_solver"]["maximum_iterations"] = 100
         solver.parameters['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
         solver.solve()
