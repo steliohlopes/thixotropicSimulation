@@ -3,6 +3,7 @@ import sys
 import timeit
 import matplotlib.pyplot as plt
 import numpy as np
+from mpi4py import MPI as pyMPI
 sys.path.append("..")
 
 class Solver:    
@@ -60,7 +61,7 @@ class Solver:
                   "\nphi0="+str(self.problem.fluid.phi0)+
                   "\nphiInf="+str(self.problem.fluid.phiInf)+
                   "\nTa="+str(self.problem.fluid.Ta)+
-                  "\nphiTc="+str(self.problem.fluid.Tc)                  )
+                  "\nTc="+str(self.problem.fluid.Tc)                  )
         log.write("\nTotal running time: %dh:%dmin:%ds" % (hours, mins, secs))
         log.write("\nNumber of processing cores utilized for the simulation: %d" % (num_procs))
         log.close()
@@ -73,8 +74,9 @@ class Solver:
         # R pipe radius
         nPow=self.problem.fluid.nPow
         k=self.problem.fluid.k
-
-        dpdx= (self.p1(xpoint+DOLFIN_EPS_LARGE,0)-self.p1(xpoint-DOLFIN_EPS_LARGE,0))/(2*DOLFIN_EPS_LARGE)
+        Rloc = np.array([xpoint+DOLFIN_EPS_LARGE,0])
+        Lloc = np.array([xpoint-DOLFIN_EPS_LARGE,0])
+        dpdx= (self.peval(self.p1,Rloc)-self.peval(self.p1,Lloc))/(2*DOLFIN_EPS_LARGE)
         
         ux = []
         j = []
@@ -83,7 +85,7 @@ class Solver:
 
         for i in np.linspace(-R*0.999, R*0.999, 200):
             j.append(i)
-            ux.append(self.u1(xpoint,i)[0])
+            ux.append(self.peval(self.u1,np.array([xpoint,i]))[0])
             uxPoiseuille.append(-(dpdx)*(1/(4*k))*(R**2-i**2))
             uxPowerLaw.append(nPow/(nPow+1)*(-dpdx/(2*k))**(1/nPow)*(R**((nPow+1)/nPow) -abs(i)**((nPow+1)/nPow)))
 
@@ -93,8 +95,8 @@ class Solver:
             uxPoiseuille/np.mean(uxPoiseuille), j,'b',
             ux/np.mean(ux),j,'r',)
         
-        plt.xlabel(r'$\frac{u}{\bar{u}}$', fontsize=16)
-        plt.ylabel(r'r [-]', fontsize=16)
+        plt.xlabel(r'$\frac{u}{\bar{u}}$ [-]', fontsize=16)
+        plt.ylabel(r'r [m]', fontsize=16)
         plt.title('Comparison of Velocity Profiles', fontsize=16)
         plt.legend([
             'PowerLaw Analytical',
@@ -103,3 +105,23 @@ class Solver:
         plt.tight_layout()
         plt.savefig(filePath+'Result.png')
         plt.close()
+    def mpi4py_comm(self,comm):
+        '''Get mpi4py communicator'''
+        try:
+            return comm.tompi4py()
+        except AttributeError:
+            return comm
+
+    
+    def peval(self,f, x):
+        '''Parallel synced eval'''
+        try:
+            yloc = f(x)
+        except RuntimeError:
+            yloc = np.inf*np.ones(f.value_shape())
+
+        comm = self.mpi4py_comm(f.function_space().mesh().mpi_comm())
+        yglob = np.zeros_like(yloc)
+        comm.Allreduce(yloc, yglob, op=pyMPI.MIN)
+
+        return yglob
