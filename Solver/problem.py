@@ -74,6 +74,12 @@ class Problem:
     def eta(self, k, nPow, u):
         eps = 1e-6
         return k * pow(self.gammaDot(u) + eps, nPow - 1)
+    
+    def etaSMD(self, k, nPow, u,eta0,etaInf):
+        eps = 1e-6
+        tauY=DOLFIN_EPS
+        gammaDot = self.gammaDot(u)
+        return (1-exp(-eta0*gammaDot/tauY))*(tauY/gammaDot + k * pow(gammaDot + eps, nPow - 1) + etaInf)
 
     def normalized_fluidity(self, phi, phi0, phiInf):
         return (phi - phi0) / (phiInf - phi0)
@@ -145,13 +151,21 @@ class Problem:
         s = conditional(lt(dimensionless_phieq,1e-3),1e9,(8 / (exp(dimensionless_phieq / 0.09) - 1)) + 1.2)
         return s
 
-    def NewtonianEquation(self, wini=None):
+    
+    def GNFEquation(self,model ,wini=None):
         if wini != None:
             self.w = wini
 
+        if model=='newtonian':
+            eta = self.fluid.k
+        if model=='powerlaw':
+            eta = self.eta(self.fluid.k, self.fluid.nPow, self.u)
+        if model=='SMD':
+            eta = self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0,1/self.fluid.phiInf)
+
         a01 = (
             inner(
-                self.TT(self.u, self.p, self.eta(self.fluid.k, 1, self.u)),
+                self.TT(self.u, self.p, eta),
                 grad(self.v),
             )
         ) * self.mesh.dx()
@@ -162,7 +176,7 @@ class Problem:
             if key in self.mesh.subdomains
         )
         # Outlet Pressure
-        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , self.eta(self.fluid.k, 1, self.u))), self.v) * self.mesh.ds(outletBCsIndex)
+        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , eta)), self.v) * self.mesh.ds(outletBCsIndex)
         
         if self.boundaries.inletCondition == 0:
             inletBCsIndex = tuple(
@@ -171,55 +185,7 @@ class Problem:
                 if key in self.mesh.subdomains
             )
             # Inlet Pressure
-            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , self.eta(self.fluid.k, 1, self.u))), self.v) * self.mesh.ds(inletBCsIndex)
-
-        # Mass Conservation(Continuity)
-        a02 = (self.q * div(self.u)) * self.mesh.dx()
-        L02 = 0
-
-        # Fluidity
-        a03 = (self.eta(self.fluid.k, 1, self.u) * (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0) - 1) * self.m * self.mesh.dx()
-        L03 = 0
-
-        # Complete Weak Form
-        F0 = (a01 + a02 + a03) - (L01 + L02 + L03)
-        # Jacobian Matrix
-        J0 = derivative(F0, self.w, self.dw)
-
-        # Problem and Solver definitions
-        self.problemU0 = NonlinearVariationalProblem(
-            F0, self.w, self.boundaries.bcs, J0
-        )
-
-        return self.problemU0
-
-    def PowerLawEquation(self, wini=None):
-        if wini != None:
-            self.w = wini
-        
-        a01 = (
-            inner(
-                self.TT(self.u, self.p, self.eta(self.fluid.k, self.fluid.nPow, self.u)),
-                grad(self.v),
-            )
-        ) * self.mesh.dx()
-
-        outletBCsIndex = tuple(
-            self.mesh.subdomains[key]
-            for key in self.boundaries.outletBCs
-            if key in self.mesh.subdomains
-        )
-        # Outlet Pressure
-        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , self.eta(self.fluid.k, self.fluid.nPow, self.u))), self.v) * self.mesh.ds(outletBCsIndex)
-        
-        if self.boundaries.inletCondition == 0:
-            inletBCsIndex = tuple(
-                self.mesh.subdomains[key]
-                for key in self.boundaries.inletBCs
-                if key in self.mesh.subdomains
-            )
-            # Inlet Pressure
-            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , self.eta(self.fluid.k, self.fluid.nPow, self.u))), self.v) * self.mesh.ds(inletBCsIndex)
+            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , eta)), self.v) * self.mesh.ds(inletBCsIndex)
 
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
@@ -227,7 +193,7 @@ class Problem:
 
         # Fluidity
         a03 = (
-            (self.eta(self.fluid.k, self.fluid.nPow, self.u) * (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0) - 1)
+            (eta * (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0) - 1)
             * self.m
             * self.mesh.dx()
         )
