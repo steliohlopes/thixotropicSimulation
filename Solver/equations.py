@@ -68,7 +68,7 @@ class Solver:
 
         return
     
-    def velocity_plot(self,R,xpoint,filePath):
+    def velocity_plot(self,R,xpoint,fileName):
         comm = MPI.comm_world
         # L length of pipe
         # R pipe radius
@@ -103,7 +103,7 @@ class Solver:
             'Newtonian Analytical',
             'Thixotropic result'])
         plt.tight_layout()
-        plt.savefig(filePath+'Result.png')
+        plt.savefig(fileName)
         plt.close()
     def mpi4py_comm(self,comm):
         '''Get mpi4py communicator'''

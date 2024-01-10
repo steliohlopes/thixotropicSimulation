@@ -7,12 +7,12 @@ from dolfin import *
 
 comm = MPI.comm_world
 
-meshPath = "/home/lmmp/thixotropicSimulation/PreProcessing/Contraction/"
-meshFile = "Contraction"
+meshPath = "/home/lmmp/thixotropicSimulation/PreProcessing/PipeFlow2D/"
+meshFile = "PipeFlow2D"
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
-# mesh.msh2hdmf2D()
 if comm.rank ==0:
+        # mesh.msh2hdmf2D()
         print(mesh.subdomains)
 mesh.createMeshObject2D()
 
@@ -32,10 +32,17 @@ problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 problem.GNFEquation('newtonian')
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowNewtonian")
 
-problem.GNFEquation('SMD')
-PowerLawTest = Solver(problem,maxIter = 10000)
-PowerLawTest.SimulateEquation()
-PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="ContractionSMD")
-PowerLawTest.velocity_plot(R=300e-6,xpoint= 23e-3/2,filePath=meshPath)
+# problem.GNFEquation('SMD')
+# PowerLawTest = Solver(problem,maxIter = 100)
+# PowerLawTest.SimulateEquation()
+# PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowSMD")
+# PowerLawTest.velocity_plot(R=100e-6,xpoint= 23e-3/2,fileName=f'{meshPath}SMDResult.png')
 
+boundaries.change_parameter(Fluidityin=0.1)
+problem.ThixotropicEquation()
+Thixotropic = Solver(problem,maxIter = 100)
+Thixotropic.SimulateEquation()
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName="PipeFlowThixotropic")
+Thixotropic.velocity_plot(R=100e-6,xpoint= 23e-3/2,fileName=f'{meshPath}ThixotropicResult.png')
