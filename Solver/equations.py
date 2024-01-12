@@ -91,18 +91,24 @@ class Solver:
 
         
         plt.plot(
-            uxPowerLaw/np.mean(uxPowerLaw), j,'g',
-            uxPoiseuille/np.mean(uxPoiseuille), j,'b',
+            # uxPowerLaw/np.mean(uxPowerLaw), j,'g',
+            # uxPoiseuille/np.mean(uxPoiseuille), j,'b',
             ux/np.mean(ux),j,'r',)
         
         plt.xlabel(r'$\frac{u}{\bar{u}}$ [-]', fontsize=16)
         plt.ylabel(r'r [m]', fontsize=16)
-        plt.title('Comparison of Velocity Profiles', fontsize=16)
+        plt.title(f'Comparison of Velocity Profiles n={nPow}', fontsize=16)
         plt.legend([
-            'PowerLaw Analytical',
-            'Newtonian Analytical',
-            'Thixotropic result'])
+            # 'PowerLaw Analytical',
+            # 'Newtonian Analytical',
+            # 'GNF result',
+            f'Thixotropic result Ta=Tc={self.problem.fluid.Ta}'
+            ],
+            loc='lower right',
+            )
         plt.tight_layout()
+        plt.xlim(0, 1.6) 
+        plt.ylim(-R, R) 
         plt.savefig(fileName)
         plt.close()
     def mpi4py_comm(self,comm):
