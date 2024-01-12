@@ -27,15 +27,15 @@ fluid = Fluid(
         nPow=0.60,
         phi0=0.001,
         phiInf=15,
-        Ta = 1e-1,
-        Tc = 1e-1
+        Ta = 1,
+        Tc = 1
         )
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 
 problem.GNFEquation('newtonian')
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowNewtonian")
+# newtonianTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowNewtonian")
 
 # problem.GNFEquation('SMD')
 # PowerLawTest = Solver(problem,maxIter = 100)

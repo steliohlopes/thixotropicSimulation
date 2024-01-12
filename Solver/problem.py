@@ -214,7 +214,6 @@ class Problem:
         if wini != None:
             self.w = wini
 
-
         a01 = (
             inner(
                 self.TT(self.u, self.p, (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 ))),
@@ -305,16 +304,14 @@ class Problem:
                         ),
                     )
                 )
-            )
-            * self.m,
+            ),
             (
                 -(
                     self.f
                     - dimensionless_phieq
                 )
                 / Tc
-            )
-            * self.m,
+            ),
         )
 
 
@@ -325,16 +322,24 @@ class Problem:
                     self.f
                 ),
             )
-        ) * self.m
+        ) 
 
-        a03 = a031 * self.mesh.dx()
-        # L03 = a033 * self.mesh.dx()
+        a03 = a031 * self.m * self.mesh.dx()
+        # L03 = a033 * self.m * self.mesh.dx()
 
         L03 = dot(self.u*self.m*self.f,self.mesh.n)* self.mesh.ds(outletBCsIndex) - (div(self.u*self.m)*self.f)*self.mesh.dx()
 
-
         # Complete Weak Form
         F0 = (a01 + a02 + a03) - (L01 + L02 + L03)
+
+        #SUPG
+        #Residual Strong form
+        r3 = a031 - a033
+        
+        fnorm = sqrt(dot(self.f, self.f))
+        delta = self.mesh.h/(2.0*fnorm)
+        F0 +=delta*r3 *dot(self.u, grad(self.m))*self.mesh.dx()
+
         # Jacobian Matrix
         J0 = derivative(F0, self.w, self.dw)
 
