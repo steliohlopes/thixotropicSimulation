@@ -4,6 +4,7 @@ import timeit
 import matplotlib.pyplot as plt
 import numpy as np
 from mpi4py import MPI as pyMPI
+import math
 sys.path.append("..")
 
 class Solver:    
@@ -69,7 +70,6 @@ class Solver:
         return
     
     def velocity_plot(self,R,xpoint,fileName):
-        comm = MPI.comm_world
         # L length of pipe
         # R pipe radius
         nPow=self.problem.fluid.nPow
@@ -98,19 +98,53 @@ class Solver:
         plt.xlabel(r'$\frac{u}{\bar{u}}$ [-]', fontsize=16)
         plt.ylabel(r'r [m]', fontsize=16)
         plt.title(f'Comparison of Velocity Profiles n={nPow}', fontsize=16)
-        plt.legend([
-            # 'PowerLaw Analytical',
-            # 'Newtonian Analytical',
-            # 'GNF result',
-            f'Thixotropic result Ta=Tc={self.problem.fluid.Ta}'
-            ],
-            loc='lower right',
-            )
+        # plt.legend([
+        #     # 'PowerLaw Analytical',
+        #     # 'Newtonian Analytical',
+        #     # 'GNF result',
+        #     f'Thixotropic result Ta=Tc={self.problem.fluid.Ta}'
+        #     ],
+        #     loc='lower right',
+        #     )
         plt.tight_layout()
         plt.xlim(0, 1.6) 
         plt.ylim(-R, R) 
         plt.savefig(fileName)
         plt.close()
+
+
+    def viscoty_plot(self,arrayx,fileName):
+        x = []
+        eta = []
+        phi0 = self.problem.fluid.phi0
+        phiInf = self.problem.fluid.phiInf
+        l = 4e-3
+        r = 50e-6
+        R = 100e-6
+
+        for i in np.linspace(arrayx[0], arrayx[1], 200):
+            x.append(i)
+            if abs(i) <=  (l/2):
+                f = r + (R-r) *math.sin(math.pi*abs(i)/l)
+            else:
+                f = R
+
+            dimensionless_phi = self.peval(self.f1,np.array([i,f*0.99]))
+            phi = dimensionless_phi*(phiInf-phi0)+phi0
+            etaN = 1/phi
+            eta.append(etaN)
+        
+        plt.plot(x,eta,'r',)
+        
+        plt.ylabel(r'$\eta$ [Pa.s]', fontsize=16)
+        plt.xlabel(r'z [m]', fontsize=16)
+        plt.xlim(arrayx[0],arrayx[1])
+        plt.ylim(0,10)
+        plt.title(f'Viscosity along wall', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(fileName)
+        plt.close()
+        
     def mpi4py_comm(self,comm):
         '''Get mpi4py communicator'''
         try:
