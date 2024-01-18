@@ -1,6 +1,6 @@
 from dolfin import *
 import sys
-from ufl import (real,conditional,tanh)
+from ufl_legacy import (real,conditional,tanh)
 
 sys.path.append("..")
 
@@ -85,55 +85,45 @@ class Problem:
         return (phi - phi0) / (phiInf - phi0)
 
     def dimensionless_phieq(self, k, nPow, phi0, phiInf, u,localPhi ,sigmay=0):
+
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
-        phi  = Function(V)
-        v = TestFunction(V)
+        # phi  = Function(V)
+        # v = TestFunction(V)
 
         D = self.DD(u)
         gammadot = pow( tr(D * D)/2, 0.5) + DOLFIN_EPS_LARGE
 
+        stress = gammadot/(localPhi*(phiInf-phi0)+phi0)
+        max_iter = 100
+        erro = 1e-9
+        iter = 0
+        res = 1
 
-        iniPhi = max(project(localPhi*(phiInf-phi0)+phi0,V).vector().get_local())
-        phi  = interpolate(Expression("iniPhi", degree=1,iniPhi = iniPhi), V)
+        PHI_v = project(gammadot/(stress),V)
+        while iter<=max_iter and res>=erro:
+            iter+=1
+            g_s=(1/stress)*pow((abs(stress-sigmay)/k),(1/nPow))/((phiInf-phi0)+(1/stress)*pow((abs(stress-sigmay)/k),(1/nPow)))
 
-        g_s = (phi/gammadot)*pow((abs(gammadot/phi-sigmay)/k),(1/nPow))/((phiInf-phi0)+(phi/gammadot)*pow((abs(gammadot/phi-sigmay)/k),(1/nPow)))
-        c = 500
-        H = 0.5*(1+tanh(c*(gammadot/phi-sigmay)))
+            c = 500
+            H = 0.5*(1+tanh(c*(stress-sigmay)))
 
-        G = g_s - (phi-phi0)/(phiInf-phi0) 
+            G = g_s*H - (PHI_v-phi0)/(phiInf-phi0) 
 
-        F = G * v * dx
+            num_der=1/(gammadot)* pow((abs(gammadot/PHI_v-sigmay)/k),(1/nPow)) - pow((k*nPow*PHI_v),(-1)) *pow((abs(gammadot/PHI_v-sigmay)/k),(1/nPow-1))
 
-        J = derivative(F,phi)
+            den=(phiInf-phi0)+(1/(stress))*pow((abs(stress-sigmay)/k),(1/nPow))
 
-        bcs = []
-        # Configurando o problema variacional
-        problem = NonlinearVariationalProblem(F, phi,bcs, J)
+            g_s_der= (phiInf-phi0)*num_der/(den**2)
+            H_der=0.5*c*(1-pow((tanh(c*(stress-sigmay))),2))*(-gammadot/PHI_v**2)
+            G_der= g_s_der*H+g_s*H_der-1/(phiInf-phi0)
+            PHI_N = -(G)/G_der+PHI_v
+            PHI_N = project(PHI_N,V)
+            stress=gammadot/(PHI_N)
+            res = errornorm(PHI_N,PHI_v)
+            PHI_v = PHI_N
+            begin(f"PhiEq -- r (abs) = {res} (tol = {erro})")
 
-        # Configurando o solucionador não linear
-        solver = NonlinearVariationalSolver(problem)
-        
-        # Configurando os parâmetros do solucionador
-        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-09
-        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
-        solver.parameters["newton_solver"]["maximum_iterations"] = 100
-        solver.parameters['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
-        solver.solve()
-
-        phi.rename("Phi Eq", "")
-        Simulation_file = XDMFFile(f'phiEq.xdmf')
-        Simulation_file.parameters["flush_output"] = True
-        Simulation_file.parameters["functions_share_mesh"]= True
-        Simulation_file.write(phi, 0.0)
-
-        # ux = []
-        # j = []
-        # for i in np.linspace(-100e-6, 100e-6, 10):
-        #     j.append(i)
-        #     ux.append(phi(6e-3, i))
-        # j
-
-        return (phi-phi0)/(phiInf-phi0)
+        return (PHI_N-phi0)/(phiInf-phi0)
 
     def Tc(self):
         tc = 663
