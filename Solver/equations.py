@@ -8,7 +8,7 @@ import math
 sys.path.append("..")
 
 class Solver:    
-    def __init__(self, problem,linearSolver = "lu",nonlinearSolver = "newton",preconditioner = "default",absTol = 1e-9,relTol = 1e-10,maxIter = 30):
+    def __init__(self, problem,linearSolver = "mumps",nonlinearSolver = "newton",preconditioner = "default",absTol = 1e-6,relTol = 1e-7,maxIter = 30):
 
         self.problem = problem
         ## Solver Parameters
@@ -26,19 +26,23 @@ class Solver:
         # Solver Parameters
         prmU0 = self.solverU0.parameters 
         prmU0['nonlinear_solver'] = self.nonlinearSolver
-        prmU0['newton_solver']['preconditioner'] = self.preconditioner
         prmU0['newton_solver']['absolute_tolerance'] = self.absTol
         prmU0['newton_solver']['relative_tolerance'] = self.relTol
         prmU0['newton_solver']['maximum_iterations'] = self.maxIter
+        
         prmU0['newton_solver']['linear_solver'] = self.linearSolver
+        prmU0['newton_solver']['preconditioner'] = self.preconditioner
         prmU0['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
         prmU0['newton_solver']['krylov_solver']['absolute_tolerance'] = self.absTol
-        prmU0['newton_solver']['krylov_solver']['relative_tolerance'] = self.relTol
-        prmU0['newton_solver']['krylov_solver']['maximum_iterations'] = self.maxIter
+        # prmU0['newton_solver']['krylov_solver']['relative_tolerance'] = self.relTol
+        prmU0['newton_solver']['krylov_solver']['maximum_iterations'] = 1000
         prmU0['newton_solver']['krylov_solver']['monitor_convergence'] = True
+        prmU0['newton_solver']['krylov_solver']['error_on_nonconvergence'] = False
         prmU0['newton_solver']['krylov_solver']['report'] = True
         (no_iterations,converged) = self.solverU0.solve()
         #info(prmU,True)  #get full info on the parameters
+        #list_linear_solver_methods()
+        # list_krylov_solver_preconditioners()
 
         return self.problem.w
     

@@ -8,8 +8,8 @@ import os
 
 comm = MPI.comm_world
 
-meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/PipeFlowPlate3D/"
-meshFile = "PipeFlowPlate3D"
+meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingBar/"
+meshFile = "CoatingBar"
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 if comm.rank ==0:
@@ -35,21 +35,21 @@ fluid = Fluid(
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 
 problem.GNFEquation('newtonian')
-newtonianTest = Solver(problem)
+newtonianTest = Solver(problem,linearSolver='gmres',preconditioner='none')
 newtonianTest.SimulateEquation()
 newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarNewtonian")
 # newtonianTest.viscoty_plot(arrayx=[-4e-3,4e-3],fileName=f'{meshPath}NewtonianViscosity.png')
 
-problem.GNFEquation('SMD')
-PowerLawTest = Solver(problem,maxIter = 100)
-PowerLawTest.SimulateEquation()
-PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSMD")
+# problem.GNFEquation('SMD')
+# PowerLawTest = Solver(problem,maxIter = 100,linearSolver='gmres',preconditioner='hypre_amg')
+# PowerLawTest.SimulateEquation()
+# PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSMD")
 # PowerLawTest.velocity_plot(R=100e-6,xpoint= 23e-3/2,fileName=f'{meshPath}SMDResult.png')
 # PowerLawTest.viscoty_plot(arrayx=[-4e-3,4e-3],fileName=f'{meshPath}GNFViscosity.png')
 
 boundaries.change_parameter(Fluidityin=0.1)
 problem.ThixotropicEquation()
-Thixotropic = Solver(problem,maxIter = 100)
+Thixotropic = Solver(problem,maxIter = 100,linearSolver='gmres',preconditioner='none')
 Thixotropic.SimulateEquation()
 Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarThixotropic")
 # Thixotropic.velocity_plot(R=100e-6,xpoint= 23e-3/2,fileName=f'{meshPath}ThixotropicResultTa{problem.fluid.Ta}.png')
