@@ -138,6 +138,7 @@ class FiniteElementMesh:
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
         self.functionSpace = FunctionSpace(self.meshObj, self.UPel)
+        self.DoF = self.functionSpace.dim()
 
     def createMeshObject2D(self):
         self.meshObj = Mesh()
@@ -181,3 +182,4 @@ class FiniteElementMesh:
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
         self.functionSpace = FunctionSpace(self.meshObj, self.UPel)
+        self.DoF = self.functionSpace.dim()
