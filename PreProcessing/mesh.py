@@ -19,7 +19,7 @@ class FiniteElementMesh:
         self.pressureElementOrder = 1
         # Fluidity
         self.fluidityElementfamily = "Lagrange"
-        self.fluidityElementOrder = 1
+        self.fluidityElementOrder = 2
 
         # Read .msh File
         fid = open(self.meshPath + self.meshFile + ".msh", "r")
@@ -138,6 +138,7 @@ class FiniteElementMesh:
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
         self.functionSpace = FunctionSpace(self.meshObj, self.UPel)
+        self.DoF = self.functionSpace.dim()
 
     def createMeshObject2D(self):
         self.meshObj = Mesh()
@@ -181,3 +182,4 @@ class FiniteElementMesh:
         # Function Spaces: Flow
         # Mixed Function Space: Pressure and Velocity
         self.functionSpace = FunctionSpace(self.meshObj, self.UPel)
+        self.DoF = self.functionSpace.dim()

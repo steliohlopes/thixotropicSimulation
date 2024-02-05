@@ -1,6 +1,6 @@
 from dolfin import *
 import sys
-from ufl import (real,conditional,tanh)
+from ufl_legacy import (real,conditional,tanh)
 
 sys.path.append("..")
 
@@ -89,9 +89,20 @@ class Problem:
         phi  = Function(V)
         v = TestFunction(V)
 
-        D = self.DD(u)
-        gammadot = pow( tr(D * D)/2, 0.5) + DOLFIN_EPS_LARGE
+        # D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0) + u[0].dx(1))*0.5 , (u[0].dx(2) + u[2].dx(0))*0.5 ],
+        #                     [(u[1].dx(0) + u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
+        #                     [(u[0].dx(2) + u[2].dx(0))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
 
+        # gammadot = pow( tr(D * D)/2, 0.5)
+
+        if self.mesh.Dim == 3:
+            TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + pow( u[2].dx(2),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2))+ 2*(pow((u[0].dx(2) + u[2].dx(0))*0.5,2))+ 2*(pow((u[2].dx(1) + u[1].dx(2))*0.5,2))
+
+        if self.mesh.Dim == 2:
+            TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2)) 
+
+        gammadot = pow( abs(TraceD2) *0.5, 0.5)
+        
 
         iniPhi = max(project(localPhi*(phiInf-phi0)+phi0,V).vector().get_local())
         phi  = interpolate(Expression("iniPhi", degree=1,iniPhi = iniPhi), V)
@@ -107,6 +118,17 @@ class Problem:
         J = derivative(F,phi)
 
         bcs = []
+
+        for sub in self.boundaries.inletBCs:
+            bcs.append(
+                DirichletBC(
+                    V,
+                    Constant(self.boundaries.Fluidityin*(phiInf-phi0)+phi0),
+                    self.mesh.mf,
+                    self.mesh.subdomains[sub],
+                )
+            )
+
         # Configurando o problema variacional
         problem = NonlinearVariationalProblem(F, phi,bcs, J)
 
