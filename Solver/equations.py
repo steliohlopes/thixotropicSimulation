@@ -8,7 +8,7 @@ import math
 sys.path.append("..")
 
 class Solver:    
-    def __init__(self, problem,linearSolver = "mumps",nonlinearSolver = "newton",absTol = 1e-9,relTol = 1e-10,maxIter = 30):
+    def __init__(self, problem,linearSolver = "mumps",nonlinearSolver = "newton",preconditioner = "default",absTol = 1e-9,relTol = 1e-10,maxIter = 30):
 
         self.problem = problem
         ## Solver Parameters
@@ -17,6 +17,7 @@ class Solver:
         self.absTol = absTol
         self.relTol = relTol
         self.maxIter = maxIter
+        self.preconditioner = preconditioner
         self.start = timeit.default_timer()
     
     def SimulateEquation(self):
@@ -30,7 +31,13 @@ class Solver:
         prmU0['newton_solver']['maximum_iterations'] = self.maxIter
         prmU0['newton_solver']['linear_solver'] = self.linearSolver
         prmU0['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
+        prmU0['newton_solver']['krylov_solver']['absolute_tolerance'] = self.absTol
+        prmU0['newton_solver']['krylov_solver']['relative_tolerance'] = self.relTol
+        prmU0['newton_solver']['krylov_solver']['maximum_iterations'] = self.maxIter
+        prmU0['newton_solver']['krylov_solver']['monitor_convergence'] = True
+        prmU0['newton_solver']['krylov_solver']['report'] = True
         (no_iterations,converged) = self.solverU0.solve()
+        #info(prmU,True)  #get full info on the parameters
 
         return self.problem.w
     
