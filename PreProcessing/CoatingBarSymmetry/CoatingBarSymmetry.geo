@@ -2,13 +2,13 @@ Mesh.MshFileVersion = 2; // Version of the MSH file format to use
 SetFactory("OpenCASCADE");
 
 // Parametros de geometria
-D_inlet=0.5e-3;
-L_inlet=5e-4; //Verificar medida
-H_inlet=200e-6;
+D_inlet=4e-3;
+L_inlet=4e-3; //Verificar medida
+H_inlet=0.2e-3;
 H_outlet=H_inlet;
-W_outlet=2e-2;
-L_outlet=2e-2;
-R=1e-3;
+W_outlet=100e-3;
+L_outlet=10e-3;
+R=4.1e-3;
 alpha=45*(Pi/180); //radianos
 
 l1 = 2*R/(Tan(Pi/2 - alpha));
@@ -16,7 +16,7 @@ l2 = R*Cos(alpha);
 l3 = R*Sin(alpha);
 
 // Parametro de malha
-MeshFactor = 3e-4;
+MeshFactor = 10e-4;
 
 // Cylinder 
 Point(1) = {0,0,0,MeshFactor}; //center
@@ -78,18 +78,16 @@ v() = BooleanFragments{ Volume{1}; Delete;}{ Volume{2}; Delete; };
 
 Field[1] = Distance;
 Field[1].CurvesList = {18,21};
-Field[1].Sampling = 100;
 
 Field[2] = Threshold;
 Field[2].InField = 1;
-Field[2].SizeMin = MeshFactor / 4.3;
+Field[2].SizeMin = 8e-5;
 Field[2].SizeMax = MeshFactor;
 Field[2].DistMin = L_outlet;
 Field[2].DistMax =L_outlet+l1;
 
 Field[3] = Distance;
 Field[3].CurvesList = {11,12,7,9};
-Field[3].Sampling = 25;
 
 Field[4] = Threshold;
 Field[4].InField = 3;
