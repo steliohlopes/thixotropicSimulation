@@ -5,7 +5,7 @@ sys.path.append("..")
 
 
 class Boundaries:
-    def __init__(self, mesh, Pin=None, UinVector=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"]):
+    def __init__(self, mesh, Pin=None, UinVector=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None,symmetryAxis=None):
         ###########################################
         # inletCondition = 0 -> Constant inlet Pressure Condition
         # inletCondition = 1 -> Constant inlet X Velocity  Condition
@@ -18,6 +18,13 @@ class Boundaries:
         self.inletBCs = inletBCs
         self.outletBCs = outletBCs
         self.noSlipBCs=noSlipBCs
+        self.symmetryBCs=symmetryBCs
+        
+        # symmetryAxis
+        # For x-axis 0
+        # For y-axis 1
+        # For z-axis 2
+        self.symmetryAxis=symmetryAxis
         self.Pout = Pout
         self.bcs = []
 

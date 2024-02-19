@@ -63,7 +63,6 @@ Plane Surface(1) = (1);
 
 Field[1] = Distance;
 Field[1].CurvesList = {4:102,106:204};
-Field[1].Sampling = 20;
 
 Field[2] = Threshold;
 Field[2].InField = 1;
@@ -74,7 +73,6 @@ Field[2].DistMax = r*40;
 
 // Field[3] = Distance;
 // Field[3].CurvesList = {4};
-// Field[3].Sampling = 100;
 
 // Field[4] = Threshold;
 // Field[4].InField = 3;
