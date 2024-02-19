@@ -5,7 +5,7 @@ sys.path.append("..")
 
 
 class Boundaries:
-    def __init__(self, mesh, Pin=None, UinVector=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"]):
+    def __init__(self, mesh, Pin=None, UinVector=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None):
         ###########################################
         # inletCondition = 0 -> Constant inlet Pressure Condition
         # inletCondition = 1 -> Constant inlet X Velocity  Condition
@@ -18,6 +18,7 @@ class Boundaries:
         self.inletBCs = inletBCs
         self.outletBCs = outletBCs
         self.noSlipBCs=noSlipBCs
+        self.symmetryBCs=symmetryBCs
         self.Pout = Pout
         self.bcs = []
 
@@ -40,6 +41,22 @@ class Boundaries:
                     self.mesh.subdomains[sub],
                 )
             )
+
+        # If symmetry boundary conditions are specified,
+        # set up Dirichlet boundary conditions based on the dimension:
+        # For 2D: Velocity is set to 0 along the y-axis.
+        # For 3D: Velocity is set to 0 along the z-axis.
+
+        if self.symmetryBCs != None:
+            for sub in self.symmetryBCs:
+                self.bcs.append(
+                    DirichletBC(
+                        self.mesh.functionSpace.sub(0).sub(1) if self.mesh.Dim == 2 else self.mesh.functionSpace.sub(0).sub(2),
+                        Constant(0.0),
+                        self.mesh.mf,
+                        self.mesh.subdomains[sub],
+                    )
+                )
 
         if self.Fluidityin != None:
             for sub in self.inletBCs:
