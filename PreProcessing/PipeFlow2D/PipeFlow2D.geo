@@ -12,7 +12,7 @@ Div=100;
 dx=l/Div;
 
 // Parametro de malha
-MeshFactor = 1.5e-5;
+MeshFactor = 1.7e-5;
 
 
 Point(1) ={L/2, R, 0,MeshFactor};
@@ -26,9 +26,9 @@ For x In {-l/2:l/2:dx}
 EndFor
 
 p = newp;
-Point(p) = {-L,r0 , 0,MeshFactor};
+Point(p) = {-L/2,r0 , 0,MeshFactor};
 p = newp;
-Point(p) = {-L,R , 0,MeshFactor};
+Point(p) = {-L/2,R , 0,MeshFactor};
 
 // Criando pontos da garganta
 For x In {-l/2:l/2:dx}

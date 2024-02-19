@@ -37,23 +37,36 @@ class Problem:
         D = 0.5 * (nabla_grad(u) + nabla_grad(u).T)
         return D
 
-    # Deformation Tensor du = 0 ( dx(0) )
-    def DD2(self, u):
+    def DD_direction(self, u,direction):
         #Full Deformation Tensor
         # D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0) + u[0].dx(1))*0.5 , (u[0].dx(2) + u[2].dx(0))*0.5 ],
         #                     [(u[1].dx(0) + u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
         #                     [(u[0].dx(2) + u[2].dx(0))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
-
-
         if self.mesh.Dim == 3:
-            D = sym(as_tensor([ [        0        ,     (u[0].dx(1))*0.5         , (u[0].dx(2))*0.5 ],
+            if direction==0:
+                D = sym(as_tensor([ [        0        ,     (u[0].dx(1))*0.5         , (u[0].dx(2))*0.5 ],
                                 [(u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
                                 [(u[0].dx(2))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
-            
+                
+            elif direction==1:
+                D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0))*0.5 , (u[0].dx(2) + u[2].dx(0))*0.5 ],
+                            [(u[1].dx(0))*0.5,         0            , ( u[1].dx(2))*0.5 ],
+                            [(u[0].dx(2) + u[2].dx(0))*0.5, ( u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
+                
+            elif direction==2:
+                D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0) + u[0].dx(1))*0.5 , ( u[2].dx(0))*0.5 ],
+                                [(u[1].dx(0) + u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1))*0.5 ],
+                                [(      u[2].dx(0))*0.5,            (u[2].dx(1))*0.5          ,        0] ]))
+                
         elif self.mesh.Dim == 2:
-            D = sym(as_matrix([ [        0        ,     (u[0].dx(1))*0.5      ],
+            if direction==0:
+                D = sym(as_matrix([ [        0        ,     (u[0].dx(1))*0.5      ],
                                 [(u[0].dx(1))*0.5,         u[1].dx(1)        ],]))
-
+                
+            elif direction==1:
+                D = sym(as_matrix([ [u[0].dx(0)      , (u[1].dx(0))*0.5 ],
+                                [(u[1].dx(0))*0.5,         0        ] ]))
+                
         return D
     
     # Stress Tensor
@@ -62,10 +75,9 @@ class Problem:
         T = 2 * mu * self.DD(u) - p * Identity(len(u))
         return T
     
-    # Stress Tensor DD2
-    def TT2(self, u, p, mu):
+    def TT_direction(self, u, p, mu,direction):
         # Cartesian
-        T = 2 * mu * self.DD2(u) - p * Identity(len(u))
+        T = 2 * mu * self.DD_direction(u,direction) - p * Identity(len(u))
         return T
 
     def gammaDot(self, u):
@@ -198,7 +210,7 @@ class Problem:
             if key in self.mesh.subdomains
         )
         # Outlet Pressure
-        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , eta)), self.v) * self.mesh.ds(outletBCsIndex)
+        L01 = inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pout , eta,0)), self.v) * self.mesh.ds(outletBCsIndex)
         
         if self.boundaries.inletCondition == 0:
             inletBCsIndex = tuple(
@@ -207,7 +219,7 @@ class Problem:
                 if key in self.mesh.subdomains
             )
             # Inlet Pressure
-            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , eta)), self.v) * self.mesh.ds(inletBCsIndex)
+            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pin , eta,0)), self.v) * self.mesh.ds(inletBCsIndex)
 
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
@@ -249,7 +261,7 @@ class Problem:
             if key in self.mesh.subdomains
         )
         # Outlet Pressure
-        L01 = inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pout , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )))), self.v) * self.mesh.ds(outletBCsIndex)
+        L01 = inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pout , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )),0)), self.v) * self.mesh.ds(outletBCsIndex)
         
         if self.boundaries.inletCondition == 0:
             inletBCsIndex = tuple(
@@ -258,7 +270,7 @@ class Problem:
                 if key in self.mesh.subdomains
             )
             # Inlet Pressure
-            L01 = L01+  inner(dot(self.mesh.n , self.TT2(self.u, self.boundaries.Pin , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )))), self.v) * self.mesh.ds(inletBCsIndex)
+            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pin , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )),0)), self.v) * self.mesh.ds(inletBCsIndex)
 
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
