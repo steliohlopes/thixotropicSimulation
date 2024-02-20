@@ -4,7 +4,7 @@ Mesh.MshFileVersion = 2; // Version of the MSH file format to use
 Lx0 = 0;
 Lxf = 2;
 Ly0 = 0;
-Lyf = 0.2;
+Lyf = 0.1;
 Lz0 = 0;
 Lzf = 2;
 nW = (Lyf-Ly0)*5;
@@ -52,5 +52,6 @@ Volume(1) = {1};
 
 Physical Surface("Inlet") = {3};
 Physical Surface("Outlet") = {4};
-Physical Surface("Wall") = {2,5,1,6};
+Physical Surface("Wall") = {5,1,6};
+Physical Surface("Symmetry") = {2};
 Physical Volume("Fluid") = {1};
