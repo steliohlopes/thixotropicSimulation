@@ -220,7 +220,7 @@ class Problem:
             )
             # Inlet Pressure
             L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pin , eta,0)), self.v) * self.mesh.ds(inletBCsIndex)
-
+            
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
         L02 = 0
@@ -272,6 +272,15 @@ class Problem:
             # Inlet Pressure
             L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pin , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )),0)), self.v) * self.mesh.ds(inletBCsIndex)
 
+        if self.boundaries.symmetryBCs!=None:
+            symmetryBCsIndex = tuple(
+                self.mesh.subdomains[key]
+                for key in self.boundaries.symmetryBCs
+                if key in self.mesh.subdomains
+            )
+            #Symmetry condition
+            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.p , (1 / (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0 )),self.boundaries.symmetryAxis)), self.v) * self.mesh.ds(symmetryBCsIndex)
+            
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
         L02 = 0
@@ -359,9 +368,7 @@ class Problem:
         ) 
 
         a03 = a031 * self.m * self.mesh.dx()
-        # L03 = a033 * self.m * self.mesh.dx()
-
-        L03 = dot(self.u*self.m*self.f,self.mesh.n)* self.mesh.ds(outletBCsIndex) - (div(self.u*self.m)*self.f)*self.mesh.dx()
+        L03 = a033 * self.m * self.mesh.dx()
 
         # Complete Weak Form
         F0 = (a01 + a02 + a03) - (L01 + L02 + L03)

@@ -9,7 +9,7 @@ Lz0 = 0;
 Lzf = 2;
 nW = (Lyf-Ly0)*5;
 nL = (Lxf-Lx0)*5;
-MeshFactor = 0.08;
+MeshFactor = 0.05;
 
 Point(1) = {Lx0, Ly0, Lz0,MeshFactor};
 Point(2) = {Lxf, Ly0, Lz0,MeshFactor};
@@ -52,7 +52,5 @@ Volume(1) = {1};
 
 Physical Surface("Inlet") = {3};
 Physical Surface("Outlet") = {4};
-Physical Surface("BottomWall") = {2};
-Physical Surface("TopWall") = {5};
-Physical Surface("SideWall") = {1, 6};
+Physical Surface("Wall") = {2,5,1,6};
 Physical Volume("Fluid") = {1};

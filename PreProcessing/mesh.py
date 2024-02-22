@@ -19,7 +19,7 @@ class FiniteElementMesh:
         self.pressureElementOrder = 1
         # Fluidity
         self.fluidityElementfamily = "Lagrange"
-        self.fluidityElementOrder = 2
+        self.fluidityElementOrder = 1
 
         # Read .msh File
         fid = open(self.meshPath + self.meshFile + ".msh", "r")
