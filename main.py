@@ -8,9 +8,9 @@ import os
 
 comm = MPI.comm_world
 
-meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/PipeFlow2DSymmetry/"
-meshFile = "PipeFlow2DSymmetry"
-simulation_type = '2D'
+meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingBarSymmetry/"
+meshFile = "CoatingBarSymmetry"
+simulation_type = '3D'
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 
@@ -30,7 +30,7 @@ else:
 if comm.rank ==0:
         info("Num DOFs {}".format(mesh.DoF))         
 
-boundaries = Boundaries(mesh=mesh, Pin=1e5,symmetryBCs=["Symmetry"],symmetryAxis=1)
+boundaries = Boundaries(mesh=mesh, Pin=1e5,symmetryBCs=["Symmetry"],symmetryAxis=2)
 
 fluid = Fluid(
         rho=1000,
@@ -46,7 +46,7 @@ problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 problem.GNFEquation('newtonian')
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DSymmetryNewtonian")
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryNewtonian")
 
 
 # problem.GNFEquation('SMD')
@@ -55,8 +55,8 @@ newtonianTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DSymmetryN
 # PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowSMD")
 
 
-# boundaries.change_parameter(Fluidityin=0.1)
-# problem.ThixotropicEquation()
-# Thixotropic = Solver(problem,maxIter = 100)
-# Thixotropic.SimulateEquation()
-# Thixotropic.SaveSimulationData(filePath=meshPath,fileName="PipeFlow2DSymmetryThixotropic")
+boundaries.change_parameter(Fluidityin=0.1)
+problem.ThixotropicEquation()
+Thixotropic = Solver(problem,maxIter = 100)
+Thixotropic.SimulateEquation()
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
