@@ -30,14 +30,14 @@ else:
 if comm.rank ==0:
         info("Num DOFs {}".format(mesh.DoF))         
 
-boundaries = Boundaries(mesh=mesh, Pin=1e5,symmetryBCs=["Symmetry"],symmetryAxis=2)
+boundaries = Boundaries(mesh=mesh, UinVector=(3e-3,0.0,0.0),symmetryBCs=["Symmetry"],symmetryAxis=2)
 
 fluid = Fluid(
         rho=1000,
         k=1,
-        nPow=0.60,
+        nPow=0.8,
         phi0=0.001,
-        phiInf=15,
+        phiInf=50,
         Ta = 1,
         Tc = 1
         )
@@ -57,6 +57,11 @@ newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryN
 
 boundaries.change_parameter(Fluidityin=0.1)
 problem.ThixotropicEquation()
+Thixotropic = Solver(problem,maxIter = 100)
+Thixotropic.SimulateEquation()
+# Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
+
+problem.fluid.nPow=0.6
 Thixotropic = Solver(problem,maxIter = 100)
 Thixotropic.SimulateEquation()
 Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
