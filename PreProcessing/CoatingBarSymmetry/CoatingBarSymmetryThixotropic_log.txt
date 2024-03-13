@@ -3,8 +3,8 @@ k=1
 nPow=0.6
 tau0=None
 phi0=0.001
-phiInf=15
+phiInf=50
 Ta=1
 Tc=1
-Total running time: 31h:11min:53s
+Total running time: 1h:44min:35s
 Number of processing cores utilized for the simulation: 5

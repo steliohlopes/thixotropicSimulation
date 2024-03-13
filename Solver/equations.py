@@ -45,6 +45,8 @@ class Solver:
         comm = MPI.comm_world
         num_procs = comm.Get_size()
         (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
+        V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
+        self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V)
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
         self.f1.rename("Fluidity", "")

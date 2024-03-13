@@ -30,14 +30,14 @@ else:
 if comm.rank ==0:
         info("Num DOFs {}".format(mesh.DoF))         
 
-boundaries = Boundaries(mesh=mesh, Pin=1e5,symmetryBCs=["Symmetry"],symmetryAxis=2)
+boundaries = Boundaries(mesh=mesh, UinVector=(3e-3,0.0,0.0),symmetryBCs=["Symmetry"],symmetryAxis=2)
 
 fluid = Fluid(
         rho=1000,
         k=1,
-        nPow=0.60,
+        nPow=0.8,
         phi0=0.001,
-        phiInf=15,
+        phiInf=50,
         Ta = 1,
         Tc = 1
         )
@@ -49,14 +49,23 @@ newtonianTest.SimulateEquation()
 newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryNewtonian")
 
 
-# problem.GNFEquation('SMD')
-# PowerLawTest = Solver(problem,maxIter = 100)
-# PowerLawTest.SimulateEquation()
+problem.GNFEquation('SMD')
+PowerLawTest = Solver(problem,maxIter = 100)
+PowerLawTest.SimulateEquation()
 # PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowSMD")
 
+problem.fluid.nPow=0.6
+problem.GNFEquation('SMD')
+PowerLawTest = Solver(problem,maxIter = 100)
+PowerLawTest.SimulateEquation()
+PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetrySMD")
 
-boundaries.change_parameter(Fluidityin=0.1)
-problem.ThixotropicEquation()
-Thixotropic = Solver(problem,maxIter = 100)
-Thixotropic.SimulateEquation()
-Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
+# boundaries.change_parameter(Fluidityin=0.1)
+# problem.ThixotropicEquation()
+# Thixotropic = Solver(problem,maxIter = 100)
+# Thixotropic.SimulateEquation()
+# Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
+
+# Thixotropic = Solver(problem,maxIter = 100)
+# Thixotropic.SimulateEquation()
+# Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
