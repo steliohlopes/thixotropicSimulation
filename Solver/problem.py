@@ -190,6 +190,19 @@ class Problem:
         if wini != None:
             self.w = wini
 
+            if self.mesh.Dim == 3:
+                (self.u, self.p, self.f) = (
+                    as_vector((self.w[0], self.w[1], self.w[2])),
+                    self.w[3],
+                    self.w[4],
+                )
+            elif self.mesh.Dim == 2:
+                (self.u, self.p, self.f) = (
+                    as_vector((self.w[0], self.w[1])),
+                    self.w[2],
+                    self.w[3],
+                )
+
         if model=='newtonian':
             eta = self.fluid.k
         if model=='powerlaw':
@@ -247,6 +260,19 @@ class Problem:
     def ThixotropicEquation(self, wini=None):
         if wini != None:
             self.w = wini
+
+            if self.mesh.Dim == 3:
+                (self.u, self.p, self.f) = (
+                    as_vector((self.w[0], self.w[1], self.w[2])),
+                    self.w[3],
+                    self.w[4],
+                )
+            elif self.mesh.Dim == 2:
+                (self.u, self.p, self.f) = (
+                    as_vector((self.w[0], self.w[1])),
+                    self.w[2],
+                    self.w[3],
+                )
 
         a01 = (
             inner(

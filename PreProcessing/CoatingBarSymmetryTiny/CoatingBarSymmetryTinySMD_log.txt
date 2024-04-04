@@ -1,0 +1,10 @@
+rho=1000
+k=1
+nPow=0.9
+tau0=None
+phi0=0.001
+phiInf=50
+Ta=300
+Tc=300
+Total running time: 5h:14min:44s
+Number of processing cores utilized for the simulation: 5

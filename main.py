@@ -8,8 +8,8 @@ import os
 
 comm = MPI.comm_world
 
-meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingBarSymmetry/"
-meshFile = "CoatingBarSymmetry"
+meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingBarSymmetryTiny/"
+meshFile = "CoatingBarSymmetryTiny"
 simulation_type = '3D'
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
@@ -30,7 +30,7 @@ else:
 if comm.rank ==0:
         info("Num DOFs {}".format(mesh.DoF))         
 
-boundaries = Boundaries(mesh=mesh, UinVector=(3e-3,0.0,0.0),symmetryBCs=["Symmetry"],symmetryAxis=2)
+boundaries = Boundaries(mesh=mesh, Pin=4000,symmetryBCs=["Symmetry"],symmetryAxis=2)
 
 fluid = Fluid(
         rho=1000,
@@ -46,26 +46,40 @@ problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
 problem.GNFEquation('newtonian')
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryNewtonian")
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryTinyNewtonian")
+wini = problem.w
+del newtonianTest,problem
+
+# problem.GNFEquation('SMD')
+# PowerLawTest = Solver(problem,maxIter = 100,absTol = 1e-6)
+# PowerLawTest.SimulateEquation()
+# PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryTinySMD")
+
+boundaries.change_parameter(Fluidityin=0.1)
+problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
+problem2.ThixotropicEquation(wini=wini)
+del wini
+Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
+Thixotropic.SimulateEquation()
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetrytinyThixotropicLaponite")
+wini = problem2.w
+del Thixotropic, problem2
+
+fluid2 = Fluid(
+        rho=1000,
+        k=1,
+        nPow=0.32,
+        phi0=0.001,
+        phiInf=50,
+        Ta = 10,
+        Tc = 10
+        )
 
 
-problem.GNFEquation('SMD')
-PowerLawTest = Solver(problem,maxIter = 100)
-PowerLawTest.SimulateEquation()
-# PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="PipeFlowSMD")
+problem3 = Problem(mesh=mesh,fluid=fluid2,boundaries=boundaries)
 
-problem.fluid.nPow=0.6
-problem.GNFEquation('SMD')
-PowerLawTest = Solver(problem,maxIter = 100)
-PowerLawTest.SimulateEquation()
-PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetrySMD")
-
-# boundaries.change_parameter(Fluidityin=0.1)
-# problem.ThixotropicEquation()
-# Thixotropic = Solver(problem,maxIter = 100)
-# Thixotropic.SimulateEquation()
-# Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
-
-# Thixotropic = Solver(problem,maxIter = 100)
-# Thixotropic.SimulateEquation()
-# Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryThixotropic")
+problem3.ThixotropicEquation(wini=wini)
+del wini
+Thixotropic2 = Solver(problem3,maxIter = 100,absTol = 1e-6)
+Thixotropic2.SimulateEquation()
+Thixotropic2.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetrytinyThixotropicLaponite")

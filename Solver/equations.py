@@ -56,6 +56,7 @@ class Solver:
         Simulation_file.write(self.u1, 0.0)
         Simulation_file.write(self.p1, 0.0)
         Simulation_file.write(self.f1, 0.0)
+        Simulation_file.close()
 
         self.stop = timeit.default_timer()
         total_time = self.stop - self.start
