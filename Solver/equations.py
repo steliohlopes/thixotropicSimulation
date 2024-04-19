@@ -46,16 +46,27 @@ class Solver:
         num_procs = comm.Get_size()
         (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
         V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
+        self.advectionField = project((
+            inner(
+                self.u1,
+                grad(
+                    self.f1
+                ),
+            )
+        ),V)
         self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V)
+        
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
         self.f1.rename("Fluidity", "")
+        self.advectionField.rename("advectionField", "")
         Simulation_file = XDMFFile(filePath+fileName+".xdmf")
         Simulation_file.parameters["flush_output"] = True
         Simulation_file.parameters["functions_share_mesh"]= True
         Simulation_file.write(self.u1, 0.0)
         Simulation_file.write(self.p1, 0.0)
         Simulation_file.write(self.f1, 0.0)
+        Simulation_file.write(self.advectionField, 0.0)
         Simulation_file.close()
 
         self.stop = timeit.default_timer()
