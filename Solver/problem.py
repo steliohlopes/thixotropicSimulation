@@ -97,8 +97,10 @@ class Problem:
         
         return T
 
+    #Dimensional GammaDot
     def gammaDot(self, u):
-        return pow(2 * inner(self.DD(u), self.DD(u)), 0.5)
+        Ddimensional = self.DD(u*self.U)/self.U
+        return pow(2 * inner(Ddimensional, Ddimensional), 0.5)
 
     def eta(self, k, nPow, u):
         eps = 1e-6
@@ -221,15 +223,15 @@ class Problem:
                 )
 
         if model=='newtonian':
-            eta = self.fluid.k
-        if model=='powerlaw':
-            eta = self.eta(self.fluid.k, self.fluid.nPow, self.u)
-        if model=='SMD':
-            eta = self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0,1/self.fluid.phiInf)
+            phi = 1/self.fluid.k
+        elif model=='powerlaw':
+            phi = 1/self.eta(self.fluid.k, self.fluid.nPow, self.u)
+        elif model=='SMD':
+            phi = 1/self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0,1/self.fluid.phiInf)
 
         a01 = (
             inner(
-                self.TT(self.u, self.p, eta),
+                self.TT(self.u, self.p, self.f),
                 grad(self.v),
             )
         ) * self.mesh.dx()
@@ -240,7 +242,7 @@ class Problem:
             if key in self.mesh.subdomains
         )
         # Outlet Pressure
-        L01 = inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pout , eta,0)), self.v) * self.mesh.ds(outletBCsIndex)
+        L01 = inner(dot(self.mesh.n , self.TT_direction(self.u, 0 , self.f,0)), self.v) * self.mesh.ds(outletBCsIndex)
         
         if self.boundaries.inletCondition == 0:
             inletBCsIndex = tuple(
@@ -249,7 +251,16 @@ class Problem:
                 if key in self.mesh.subdomains
             )
             # Inlet Pressure
-            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.boundaries.Pin , eta,0)), self.v) * self.mesh.ds(inletBCsIndex)
+            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, 1 , self.f, 0)), self.v) * self.mesh.ds(inletBCsIndex)
+            
+        if self.boundaries.symmetryBCs!=None:
+            symmetryBCsIndex = tuple(
+                self.mesh.subdomains[key]
+                for key in self.boundaries.symmetryBCs
+                if key in self.mesh.subdomains
+            )
+            #Symmetry condition
+            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.p , self.f, self.boundaries.symmetryAxis)), self.v) * self.mesh.ds(symmetryBCsIndex)
             
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
@@ -257,7 +268,8 @@ class Problem:
 
         # Fluidity
         a03 = (
-            (eta * (self.f *(self.fluid.phiInf - self.fluid.phi0) + self.fluid.phi0) - 1)
+            (
+             self.normalized_fluidity(phi=phi,phi0=self.fluid.phi0,phiInf=self.fluid.phiInf)-self.f)/self.L
             * self.m
             * self.mesh.dx()
         )
