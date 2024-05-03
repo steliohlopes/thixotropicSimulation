@@ -6,10 +6,12 @@ sys.path.append("..")
 
 
 class Problem:
-    def __init__(self, mesh, fluid, boundaries):
+    def __init__(self, mesh, fluid, boundaries,L,U):
         self.mesh = mesh
         self.fluid = fluid
         self.boundaries = boundaries
+        self.L = L
+        self.U = U
 
         ##### Functions
         ## Trial and Test function(s)
@@ -34,7 +36,7 @@ class Problem:
     # Deformation Tensor
     def DD(self, u):
         # Cartesian
-        D = 0.5 * (nabla_grad(u) + nabla_grad(u).T)
+        D = 0.5*self.U * (nabla_grad(u) + nabla_grad(u).T)
         return D
 
     def DD_direction(self, u,direction):
@@ -44,40 +46,55 @@ class Problem:
         #                     [(u[0].dx(2) + u[2].dx(0))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
         if self.mesh.Dim == 3:
             if direction==0:
-                D = sym(as_tensor([ [        0        ,     (u[0].dx(1))*0.5         , (u[0].dx(2))*0.5 ],
-                                [(u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
-                                [(u[0].dx(2))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
+                D = sym(as_tensor([ [        0        ,     (u[0].dx(1))*self.U*0.5         , (u[0].dx(2))*self.U*0.5 ],
+                                [(u[0].dx(1))*self.U*0.5,         u[1].dx(1)*self.U            , (u[2].dx(1) + u[1].dx(2))*self.U*0.5 ],
+                                [(u[0].dx(2))*self.U*0.5, (u[2].dx(1) + u[1].dx(2))*self.U*0.5 ,         u[2].dx(2)*self.U] ]))
                 
             elif direction==1:
-                D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0))*0.5 , (u[0].dx(2) + u[2].dx(0))*0.5 ],
-                            [(u[1].dx(0))*0.5,         0            , ( u[1].dx(2))*0.5 ],
-                            [(u[0].dx(2) + u[2].dx(0))*0.5, ( u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
+                D = sym(as_tensor([ [        u[0].dx(0)*self.U          , (u[1].dx(0))*self.U*0.5 , (u[0].dx(2) + u[2].dx(0))*self.U*0.5 ],
+                            [(u[1].dx(0))*self.U*0.5,         0            , ( u[1].dx(2))*self.U*0.5 ],
+                            [(u[0].dx(2) + u[2].dx(0))*self.U*0.5, ( u[1].dx(2))*self.U*0.5 ,         u[2].dx(2)*self.U] ]))
                 
             elif direction==2:
-                D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0) + u[0].dx(1))*0.5 , ( u[2].dx(0))*0.5 ],
-                                [(u[1].dx(0) + u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1))*0.5 ],
-                                [(      u[2].dx(0))*0.5,            (u[2].dx(1))*0.5          ,        0] ]))
+                D = sym(as_tensor([ [        u[0].dx(0)*self.U           , (u[1].dx(0) + u[0].dx(1))*self.U*0.5 , ( u[2].dx(0))*self.U*0.5 ],
+                                [(u[1].dx(0) + u[0].dx(1))*self.U*0.5,         u[1].dx(1)*self.U            , (u[2].dx(1))*self.U*0.5 ],
+                                [(      u[2].dx(0))*self.U*0.5,            (u[2].dx(1))*self.U*0.5          ,        0] ]))
                 
         elif self.mesh.Dim == 2:
             if direction==0:
-                D = sym(as_matrix([ [        0        ,     (u[0].dx(1))*0.5      ],
-                                [(u[0].dx(1))*0.5,         u[1].dx(1)        ],]))
+                D = sym(as_matrix([ [        0        ,     (u[0].dx(1))*self.U*0.5      ],
+                                [(u[0].dx(1))*self.U*0.5,         u[1].dx(1)*self.U        ],]))
                 
             elif direction==1:
-                D = sym(as_matrix([ [u[0].dx(0)      , (u[1].dx(0))*0.5 ],
-                                [(u[1].dx(0))*0.5,         0        ] ]))
+                D = sym(as_matrix([ [u[0].dx(0)*self.U      , (u[1].dx(0))*self.U*0.5 ],
+                                [(u[1].dx(0))*self.U*0.5,         0        ] ]))
                 
         return D
     
     # Stress Tensor
-    def TT(self, u, p, mu):
+    def TT(self, u, p, phi):
+        pinf = self.boundaries.Pin
+        p0 = self.boundaries.Pout
+        dp=pinf-p0
+        
+        phiInf = self.fluid.phiInf
+        phi0 = self.fluid.phi0
+        dphi = phiInf - phi0
         # Cartesian
-        T = 2 * mu * self.DD(u) - p * Identity(len(u))
+        T = 2/dp * 1/(phi*dphi + phi0) * self.DD(u) - ((p*dp + p0)/dp) * Identity(len(u))
         return T
     
-    def TT_direction(self, u, p, mu,direction):
+    def TT_direction(self, u, p, phi,direction):
+        pinf = self.boundaries.Pin
+        p0 = self.boundaries.Pout
+        dp=pinf-p0
+        
+        phiInf = self.fluid.phiInf
+        phi0 = self.fluid.phi0
+        dphi = phiInf - phi0
         # Cartesian
-        T = 2 * mu * self.DD_direction(u,direction) - p * Identity(len(u))
+        T = 2/dp * 1/(phi*dphi + phi0) * self.DD_direction(u,direction) - ((p*dp + p0)/dp) * Identity(len(u))
+        
         return T
 
     def gammaDot(self, u):
