@@ -6,5 +6,5 @@ phi0=0.001
 phiInf=2
 Ta=1
 Tc=1
-Total running time: 0h:0min:17s
+Total running time: 0h:2min:28s
 Number of processing cores utilized for the simulation: 20
