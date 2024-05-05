@@ -122,6 +122,8 @@ class Problem:
 
         # gammadot = pow( tr(D * D)/2, 0.5)
 
+        u = u*self.U
+        
         if self.mesh.Dim == 3:
             TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + pow( u[2].dx(2),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2))+ 2*(pow((u[0].dx(2) + u[2].dx(0))*0.5,2))+ 2*(pow((u[2].dx(1) + u[1].dx(2))*0.5,2))
 
@@ -218,10 +220,6 @@ class Problem:
                     self.w[3],
                 )
 
-        if model=='newtonian':
-            phi = 1/self.fluid.k
-        elif model=='SMD':
-            phi = 1/self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0,1/self.fluid.phiInf)
 
         a01 = (
             inner(
@@ -261,15 +259,121 @@ class Problem:
         L02 = 0
 
         # Fluidity
-        a03 = (
-            (
-             self.normalized_fluidity(phi=phi,phi0=self.fluid.phi0,phiInf=self.fluid.phiInf)-self.f)/self.L
-            * self.m
-            * self.mesh.dx()
-        )
-        L03 = 0
+        if model=='newtonian' or model=='SMD':
+            if model=='newtonian':
+                phi = 1/self.fluid.k
+            elif model=='SMD':
+                phi = 1/self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0,1/self.fluid.phiInf)
+        
+            a03 = (
+                (
+                 self.normalized_fluidity(phi=phi,phi0=self.fluid.phi0,phiInf=self.fluid.phiInf)-self.f)/self.L
+                * self.m
+                * self.mesh.dx()
+            )
+            L03 = 0
+
+        if model=='thixotropic':
+            dimensionless_phieq = self.dimensionless_phieq(
+                    self.fluid.k,
+                    self.fluid.nPow,
+                    self.fluid.phi0,
+                    self.fluid.phiInf,
+                    self.u,
+                    self.f
+                )
+        
+            Ta = self.fluid.Ta
+            # Ta = self.Ta(dimensionless_phieq)
+            Tc = self.fluid.Tc
+            # Tc = self.Tc()
+
+            a031 = conditional(
+                le(
+                    self.f,
+                    dimensionless_phieq,
+                ),
+                (
+                    (
+                        self.S(
+                            dimensionless_phieq
+                        )
+                        / (
+                            Ta
+                            *self.U
+                            * dimensionless_phieq
+                        )
+                    )
+                    * (
+                        pow(
+                            (
+                                    dimensionless_phieq
+                                    - self.f
+                            ),
+                            (
+                                self.S(
+                                    dimensionless_phieq
+                                )
+                                + 1
+                            )
+                            / self.S(
+                                dimensionless_phieq
+                            ),
+                        )
+                    )
+                    * (
+                        pow(
+                            self.f
+                            ,
+                            (
+                                self.S(
+                                    dimensionless_phieq
+                                )
+                                - 1
+                            )
+                            / self.S(
+                                dimensionless_phieq
+                            )
+                        )
+                    )
+                ),
+                (
+                    -(
+                        self.f
+                        - dimensionless_phieq
+                    )
+                    / (
+                        Tc
+                       * self.U
+                       )
+                ),
+            )
+
+
+            a032 = (
+                inner(
+                    self.u,
+                    grad(
+                        self.f
+                    ),
+                )
+            ) 
+
+            a03 = a031 * self.m * self.mesh.dx()
+            L03 = a032 * self.m * self.mesh.dx()
+
+            #SUPG
+            #Residual Strong form
+            r3 = a031 - a032
+            
+            fnorm = sqrt(dot(self.f, self.f))
+            delta = self.mesh.h/(2.0*fnorm)
+            a03 +=delta*r3 *dot(self.u, grad(self.m))*self.mesh.dx()
+
         # Complete Weak Form
         F0 = (a01 + a02 + a03) - (L01 + L02 + L03)
+
+
         # Jacobian Matrix
         J0 = derivative(F0, self.w, self.dw)
 
