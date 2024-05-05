@@ -99,12 +99,8 @@ class Problem:
 
     #Dimensional GammaDot
     def gammaDot(self, u):
-        Ddimensional = self.DD(u*self.U)/self.U
-        return pow(2 * inner(Ddimensional, Ddimensional), 0.5)
-
-    def eta(self, k, nPow, u):
-        eps = 1e-6
-        return k * pow(self.gammaDot(u) + eps, nPow - 1)
+        DD = 0.5 * (nabla_grad(u*self.U) + nabla_grad(u*self.U).T)
+        return pow(2 * inner(DD, DD), 0.5)
     
     def etaSMD(self, k, nPow, u,eta0,etaInf):
         eps = 1e-6
@@ -224,8 +220,6 @@ class Problem:
 
         if model=='newtonian':
             phi = 1/self.fluid.k
-        elif model=='powerlaw':
-            phi = 1/self.eta(self.fluid.k, self.fluid.nPow, self.u)
         elif model=='SMD':
             phi = 1/self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0,1/self.fluid.phiInf)
 

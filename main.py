@@ -57,10 +57,10 @@ newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ParallelPlatesSymme
 wini = problem.w
 del newtonianTest
 
-problem.GNFEquation('powerlaw')
+problem.GNFEquation('SMD')
 PowerLawTest = Solver(problem,absTol = 1e-6)
 PowerLawTest.SimulateEquation()
-PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="ParallelPlatesSymmetryPowerLaw")
+PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="ParallelPlatesSymmetrySMD")
 
 # boundaries.change_parameter(Fluidityin=0.1)
 # problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
