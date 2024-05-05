@@ -41,12 +41,17 @@ class Solver:
 
         return self.problem.w
     
-    def SaveSimulationData(self,filePath,fileName):
+    def SaveSimulationData(self,filePath,fileName,dimensional=False):
         comm = MPI.comm_world
         num_procs = comm.Get_size()
         (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
-        V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
-        # self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V)
+        if dimensional:
+            U = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Uel)
+            self.u1 = project(self.u1*self.problem.U,U)
+            Q = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Pel)
+            self.p1 = project(self.p1*(self.problem.boundaries.Pin - self.problem.boundaries.Pout) + self.problem.boundaries.Pout,Q)
+            V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
+            self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V)
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
         self.f1.rename("Fluidity", "")
