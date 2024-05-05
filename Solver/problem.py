@@ -115,22 +115,16 @@ class Problem:
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
         phi  = Function(V)
         v = TestFunction(V)
-
-        # D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0) + u[0].dx(1))*0.5 , (u[0].dx(2) + u[2].dx(0))*0.5 ],
-        #                     [(u[1].dx(0) + u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
-        #                     [(u[0].dx(2) + u[2].dx(0))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
-
-        # gammadot = pow( tr(D * D)/2, 0.5)
-
-        u = u*self.U
+        # u = u*self.U
         
-        if self.mesh.Dim == 3:
-            TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + pow( u[2].dx(2),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2))+ 2*(pow((u[0].dx(2) + u[2].dx(0))*0.5,2))+ 2*(pow((u[2].dx(1) + u[1].dx(2))*0.5,2))
+        # if self.mesh.Dim == 3:
+        #     TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + pow( u[2].dx(2),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2))+ 2*(pow((u[0].dx(2) + u[2].dx(0))*0.5,2))+ 2*(pow((u[2].dx(1) + u[1].dx(2))*0.5,2))
 
-        if self.mesh.Dim == 2:
-            TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2)) 
+        # if self.mesh.Dim == 2:
+        #     TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2)) 
 
-        gammadot = pow( abs(TraceD2) *0.5, 0.5)
+        # gammadot = pow( abs(TraceD2) *0.5, 0.5)
+        gammadot = self.gammaDot(u)
         
 
         iniPhi = max(project(localPhi*(phiInf-phi0)+phi0,V).vector().get_local())
@@ -165,8 +159,8 @@ class Problem:
         solver = NonlinearVariationalSolver(problem)
         
         # Configurando os parâmetros do solucionador
-        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-09
-        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
+        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-06
+        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-07
         solver.parameters["newton_solver"]["maximum_iterations"] = 100
         solver.parameters['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
         solver.solve()
