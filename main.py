@@ -8,9 +8,9 @@ import os
 
 comm = MPI.comm_world
 
-meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/Contraction/"
-meshFile = "Contraction"
-simulation_type = '2D'
+meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingHangerSymmetry2/"
+meshFile = "CoatingHangerSymmetry2"
+simulation_type = '3D'
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 
@@ -36,57 +36,52 @@ fluid = Fluid(
         nPow=0.8,
         phi0=0.001,
         phiInf=20,
-        Ta = 50,
-        Tc = 50
+        Ta = 3,
+        Tc = 3
         )
 
-Pin = 2000
+Pin = 3000
 Pout = 0
-L = 24e-3
-H=100e-6*2
-U = -((Pout-Pin)/L)*(H/2/(2*fluid.k))*(H-H/2)
+W_outlet=10e-3
+L=W_outlet/2
+# H=100e-6*2
+# U = -((Pout-Pin)/L)*(H/2/(2*fluid.k))*(H-H/2)
+U=1e-3
 
 if comm.rank ==0:
         info("L characteristic {}".format(L))
         info("U characteristic {}".format(U))
 
-boundaries = Boundaries(mesh=mesh, Pin=Pin,Pout=Pout)
+boundaries = Boundaries(mesh=mesh, Pin=Pin,Pout=Pout,symmetryBCs=["Symmetry"],symmetryAxis=2)
 
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
 
-problem.GNFEquation('newtonian')
+problem.Equation('newtonian')
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ContractionNewtonian")
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingHangerSymmetry2Newtonian",dimensional=True)
 wini = problem.w
 del newtonianTest
 
-
-boundaries.change_parameter(Fluidityin=0.01)
+boundaries.change_parameter(Fluidityin=0.1)
 problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
-problem2.GNFEquation(wini=wini,model='thixotropic')
-# del wini
+problem2.Equation(wini=wini,model='thixotropic')
+
 Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
-Thixotropic.SimulateEquation()
-Thixotropic.SaveSimulationData(filePath=meshPath,fileName="ContractionThixotropic",dimensional=True)
-# wini = problem2.w
-# del Thixotropic, problem2
+try:
+        Thixotropic.SimulateEquation()
+except:
+        problem2.fluid.Ta=5
+        problem2.fluid.Tc=5
+        problem2.Equation(wini=wini,model='thixotropic')
+        Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
+        Thixotropic.SimulateEquation()
+        
+        problem2.fluid.Ta=3
+        problem2.fluid.Tc=3
+        problem2.Equation(wini=wini,model='thixotropic')
+        Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
+        Thixotropic.SimulateEquation()
 
-# fluid2 = Fluid(
-#         rho=1000,
-#         k=1,
-#         nPow=0.32,
-#         phi0=0.001,
-#         phiInf=50,
-#         Ta = 10,
-#         Tc = 10
-#         )
 
-
-# problem3 = Problem(mesh=mesh,fluid=fluid2,boundaries=boundaries)
-
-# problem3.ThixotropicEquation(wini=wini)
-# del wini
-# Thixotropic2 = Solver(problem3,maxIter = 100,absTol = 1e-6)
-# Thixotropic2.SimulateEquation()
-# Thixotropic2.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetrytinyThixotropicLaponite")
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingHangerSymmetry2Thixotropic2",dimensional=True)
