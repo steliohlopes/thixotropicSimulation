@@ -36,8 +36,8 @@ fluid = Fluid(
         nPow=0.8,
         phi0=0.001,
         phiInf=20,
-        Ta = 3,
-        Tc = 3
+        Ta = 10,
+        Tc = 10
         )
 
 Pin = 3000
@@ -67,21 +67,32 @@ boundaries.change_parameter(Fluidityin=0.1)
 problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
 problem2.Equation(wini=wini,model='thixotropic')
 
+times = [5,1,0.1,0.01,0.001,0.0001]
+
 Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
-try:
-        Thixotropic.SimulateEquation()
-except:
-        problem2.fluid.Ta=5
-        problem2.fluid.Tc=5
-        problem2.Equation(wini=wini,model='thixotropic')
-        Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
-        Thixotropic.SimulateEquation()
-        
-        problem2.fluid.Ta=3
-        problem2.fluid.Tc=3
-        problem2.Equation(wini=wini,model='thixotropic')
-        Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
-        Thixotropic.SimulateEquation()
+Thixotropic.SimulateEquation()
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2Thixotropic{problem2.fluid.Ta}",dimensional=True)
+wini = problem2.w
+del Thixotropic
 
+for t in times:
+        fluid.Ta=t
+        fluid.Tc=t
+        problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
+        problem.Equation(wini=wini,model='thixotropic')
+        Thixotropic = Solver(problem,maxIter = 100,absTol = 1e-6)
+        try:
+                Thixotropic.SimulateEquation()
+                Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2Thixotropic{t}",dimensional=True)
+                wini = problem.w
+                del Thixotropic
+        except:
+                pass
 
-Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingHangerSymmetry2Thixotropic2",dimensional=True)
+del boundaries
+boundaries = Boundaries(mesh=mesh, Pin=Pin,Pout=Pout,symmetryBCs=["Symmetry"],symmetryAxis=2)  
+problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
+problem.Equation(wini=wini,model='SMD')
+Thixotropic = Solver(problem,maxIter = 100,absTol = 1e-6)
+Thixotropic.SimulateEquation()
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2SMD",dimensional=True)
