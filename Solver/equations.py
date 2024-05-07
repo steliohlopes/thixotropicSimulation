@@ -99,7 +99,7 @@ class Solver:
         Returns:
             list: List of velocity values along the sweep line.
         """
-        simulation_type = "3D"
+        simulation_type = len(sweep_dict.keys())
         for key, value in sweep_dict.items():
             if isinstance(value, list):
                 var_coord = key
@@ -118,18 +118,19 @@ class Solver:
           
             local_point_dict = fix_values.copy()
             local_point_dict[var_coord] = i
-            if simulation_type =="3D":
-                local_point = [local_point_dict["x"],local_point_dict["y"],local_point_dict["z"]]
-            elif simulation_type =="2D":
-                local_point = [local_point_dict["x"],local_point_dict["y"]]
+            if simulation_type ==3:
+                local_point = [local_point_dict[0],local_point_dict[1],local_point_dict[2]]
+            elif simulation_type ==2:
+                local_point = [local_point_dict[0],local_point_dict[1]]
             ux.append(self.peval(self.u1,np.array(local_point))[velocity_coord])
-
+        
         plt.plot(ux,j,'r',)
         
         plt.xlabel(r'$u$ [m/s]', fontsize=16)
         plt.ylabel(r'r [m]', fontsize=16)
-        plt.title(f'Velocity Profiles', fontsize=16)
+        plt.title(f'Velocity Profile', fontsize=16)
         plt.tight_layout()
+        plt.xlim(0, max(ux)*1.1) 
         plt.ylim(start_val, end_val) 
         plt.savefig(fileName)
         plt.close()
