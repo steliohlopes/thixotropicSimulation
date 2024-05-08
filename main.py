@@ -12,6 +12,19 @@ meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingHangerSymmet
 meshFile = "CoatingHangerSymmetry2"
 simulation_type = '3D'
 
+Pin = 3000
+Pout = 0
+W_outlet=10e-3
+L=W_outlet/2
+# H=100e-6*2
+# U = -((Pout-Pin)/L)*(H/2/(2*fluid.k))*(H-H/2)
+U=1e-3
+
+sweep_dict={0:0.005,1:-0.0001,2:[0,0.005]}
+velocity_coord = 0
+num_points = 3000
+
+
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 
 if comm.rank ==0:
@@ -40,13 +53,6 @@ fluid = Fluid(
         Tc = 10
         )
 
-Pin = 3000
-Pout = 0
-W_outlet=10e-3
-L=W_outlet/2
-# H=100e-6*2
-# U = -((Pout-Pin)/L)*(H/2/(2*fluid.k))*(H-H/2)
-U=1e-3
 
 if comm.rank ==0:
         info("L characteristic {}".format(L))
@@ -60,6 +66,7 @@ problem.Equation('newtonian')
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
 newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingHangerSymmetry2Newtonian",dimensional=True)
+newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName="CoatingHangerSymmetry2Newtonian.png")
 wini = problem.w
 del newtonianTest
 
@@ -72,6 +79,7 @@ times = [5,1,0.1,0.01,0.001,0.0001]
 Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
 Thixotropic.SimulateEquation()
 Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2Thixotropic{problem2.fluid.Ta}",dimensional=True)
+Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetry2Thixotropic{problem2.fluid.Ta}.png")
 wini = problem2.w
 del Thixotropic
 
@@ -84,6 +92,7 @@ for t in times:
         try:
                 Thixotropic.SimulateEquation()
                 Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2Thixotropic{t}",dimensional=True)
+                Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetry2Thixotropic{t}.png")
                 wini = problem.w
                 del Thixotropic
         except:
@@ -96,3 +105,4 @@ problem.Equation(wini=wini,model='SMD')
 Thixotropic = Solver(problem,maxIter = 100,absTol = 1e-6)
 Thixotropic.SimulateEquation()
 Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2SMD",dimensional=True)
+Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName="CoatingHangerSymmetry2SMD.png")
