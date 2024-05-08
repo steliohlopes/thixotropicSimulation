@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpi4py import MPI as pyMPI
 import math
+import csv
 sys.path.append("..")
 
 class Solver:    
@@ -94,7 +95,7 @@ class Solver:
                 * Values: Lists for sweeping a coordinate or single values for fixed coordinates.
             velocity_coord (int): Index of the coordinate representing the velocity component (0-based indexing, e.g., 0 for "x", 1 for "y", 2 for "z").
             num_points (int): Number of points along the sweep line.
-            fileName (str): Name of the output file for the plot.
+            fileName (str): Name of the output file (.csv)
 
         Returns:
             list: List of velocity values along the sweep line.
@@ -124,16 +125,21 @@ class Solver:
                 local_point = [local_point_dict[0],local_point_dict[1]]
             ux.append(self.peval(self.u1,np.array(local_point))[velocity_coord])
         
-        plt.plot(ux,j,'r',)
         
-        plt.xlabel(r'$u$ [m/s]', fontsize=16)
-        plt.ylabel(r'r [m]', fontsize=16)
-        plt.title(f'Velocity Profile', fontsize=16)
-        plt.tight_layout()
-        plt.xlim(0, max(ux)*1.1) 
-        plt.ylim(start_val, end_val) 
-        plt.savefig(fileName)
-        plt.close()
+        # plt.plot(ux,j,'r',)
+        
+        # plt.xlabel(r'$u$ [m/s]', fontsize=16)
+        # plt.ylabel(r'r [m]', fontsize=16)
+        # plt.title(f'Velocity Profile', fontsize=16)
+        # plt.tight_layout()
+        # plt.xlim(0, max(ux)*1.1) 
+        # plt.ylim(start_val, end_val) 
+        # plt.savefig(fileName)
+        # plt.close()
+        with open(fileName, 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            for x, y in zip(ux, j):
+                csv_writer.writerow([y, x])
 
 
     def viscoty_plot(self,arrayx,fileName):
