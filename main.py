@@ -8,9 +8,22 @@ import os
 
 comm = MPI.comm_world
 
-meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingBarSymmetryTiny/"
-meshFile = "CoatingBarSymmetryTiny"
+meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingHangerSymmetry2/"
+meshFile = "CoatingHangerSymmetry2"
 simulation_type = '3D'
+
+Pin = 3000
+Pout = 0
+W_outlet=10e-3
+L=W_outlet/2
+# H=100e-6*2
+# U = -((Pout-Pin)/L)*(H/2/(2*fluid.k))*(H-H/2)
+U=1e-3
+
+sweep_dict={0:0.005,1:-0.0001,2:[0,0.005]}
+velocity_coord = 0
+num_points = 3000
+
 
 mesh = FiniteElementMesh(meshPath=meshPath,meshFile=meshFile)
 
@@ -30,56 +43,66 @@ else:
 if comm.rank ==0:
         info("Num DOFs {}".format(mesh.DoF))         
 
-boundaries = Boundaries(mesh=mesh, Pin=4000,symmetryBCs=["Symmetry"],symmetryAxis=2)
-
 fluid = Fluid(
         rho=1000,
         k=1,
         nPow=0.8,
         phi0=0.001,
-        phiInf=50,
-        Ta = 1,
-        Tc = 1
-        )
-problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
-
-problem.GNFEquation('newtonian')
-newtonianTest = Solver(problem)
-newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryTinyNewtonian")
-wini = problem.w
-del newtonianTest,problem
-
-# problem.GNFEquation('SMD')
-# PowerLawTest = Solver(problem,maxIter = 100,absTol = 1e-6)
-# PowerLawTest.SimulateEquation()
-# PowerLawTest.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetryTinySMD")
-
-boundaries.change_parameter(Fluidityin=0.1)
-problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries)
-problem2.ThixotropicEquation(wini=wini)
-del wini
-Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
-Thixotropic.SimulateEquation()
-Thixotropic.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetrytinyThixotropicLaponite")
-wini = problem2.w
-del Thixotropic, problem2
-
-fluid2 = Fluid(
-        rho=1000,
-        k=1,
-        nPow=0.32,
-        phi0=0.001,
-        phiInf=50,
+        phiInf=20,
         Ta = 10,
         Tc = 10
         )
 
 
-problem3 = Problem(mesh=mesh,fluid=fluid2,boundaries=boundaries)
+if comm.rank ==0:
+        info("L characteristic {}".format(L))
+        info("U characteristic {}".format(U))
 
-problem3.ThixotropicEquation(wini=wini)
-del wini
-Thixotropic2 = Solver(problem3,maxIter = 100,absTol = 1e-6)
-Thixotropic2.SimulateEquation()
-Thixotropic2.SaveSimulationData(filePath=meshPath,fileName="CoatingBarSymmetrytinyThixotropicLaponite")
+boundaries = Boundaries(mesh=mesh, Pin=Pin,Pout=Pout,symmetryBCs=["Symmetry"],symmetryAxis=2)
+
+problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
+
+problem.Equation('newtonian')
+newtonianTest = Solver(problem)
+newtonianTest.SimulateEquation()
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="CoatingHangerSymmetry2Newtonian",dimensional=True)
+newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName="CoatingHangerSymmetry2Newtonian.png")
+wini = problem.w
+del newtonianTest
+
+boundaries.change_parameter(Fluidityin=0.1)
+problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
+problem2.Equation(wini=wini,model='thixotropic')
+
+times = [5,1,0.1,0.01,0.001,0.0001]
+
+Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
+Thixotropic.SimulateEquation()
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2Thixotropic{problem2.fluid.Ta}",dimensional=True)
+Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetry2Thixotropic{problem2.fluid.Ta}.png")
+wini = problem2.w
+del Thixotropic
+
+for t in times:
+        fluid.Ta=t
+        fluid.Tc=t
+        problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
+        problem.Equation(wini=wini,model='thixotropic')
+        Thixotropic = Solver(problem,maxIter = 100,absTol = 1e-6)
+        try:
+                Thixotropic.SimulateEquation()
+                Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2Thixotropic{t}",dimensional=True)
+                Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetry2Thixotropic{t}.png")
+                wini = problem.w
+                del Thixotropic
+        except:
+                pass
+
+del boundaries
+boundaries = Boundaries(mesh=mesh, Pin=Pin,Pout=Pout,symmetryBCs=["Symmetry"],symmetryAxis=2)  
+problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
+problem.Equation(wini=wini,model='SMD')
+Thixotropic = Solver(problem,maxIter = 100,absTol = 1e-6)
+Thixotropic.SimulateEquation()
+Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetry2SMD",dimensional=True)
+Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName="CoatingHangerSymmetry2SMD.png")

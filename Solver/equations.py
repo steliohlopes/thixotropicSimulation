@@ -41,12 +41,17 @@ class Solver:
 
         return self.problem.w
     
-    def SaveSimulationData(self,filePath,fileName):
+    def SaveSimulationData(self,filePath,fileName,dimensional=False):
         comm = MPI.comm_world
         num_procs = comm.Get_size()
         (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
-        V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
-        self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V)
+        if dimensional:
+            U = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Uel)
+            self.u1 = project(self.u1*self.problem.U,U)
+            Q = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Pel)
+            self.p1 = project(self.p1*(self.problem.boundaries.Pin - self.problem.boundaries.Pout) + self.problem.boundaries.Pout,Q)
+            V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
+            self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V)
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
         self.f1.rename("Fluidity", "")
@@ -79,46 +84,54 @@ class Solver:
 
         return
     
-    def velocity_plot(self,R,xpoint,fileName):
-        # L length of pipe
-        # R pipe radius
-        nPow=self.problem.fluid.nPow
-        k=self.problem.fluid.k
-        Rloc = np.array([xpoint+DOLFIN_EPS_LARGE,0])
-        Lloc = np.array([xpoint-DOLFIN_EPS_LARGE,0])
-        dpdx= (self.peval(self.p1,Rloc)-self.peval(self.p1,Lloc))/(2*DOLFIN_EPS_LARGE)
+    def velocity_plot(self,sweep_dict,velocity_coord,num_points,fileName):
+        """
+        Function to create a velocity plot by sweeping a line through a 2D or 3D simulation.
+
+        Arguments:
+            sweep_dict (dict): Dictionary specifying coordinates to sweep and their values.
+                * Keys: coordinate representing the component (0-based indexing, e.g., 0 for "x", 1 for "y", 2 for "z").
+                * Values: Lists for sweeping a coordinate or single values for fixed coordinates.
+            velocity_coord (int): Index of the coordinate representing the velocity component (0-based indexing, e.g., 0 for "x", 1 for "y", 2 for "z").
+            num_points (int): Number of points along the sweep line.
+            fileName (str): Name of the output file for the plot.
+
+        Returns:
+            list: List of velocity values along the sweep line.
+        """
+        simulation_type = len(sweep_dict.keys())
+        for key, value in sweep_dict.items():
+            if isinstance(value, list):
+                var_coord = key
+                start_val = value[0]
+                end_val = value[1]
+                
+
+        fix_values = sweep_dict.copy()
+        del fix_values[var_coord]
         
         ux = []
         j = []
-        uxPoiseuille = []
-        uxPowerLaw=[]
 
-        for i in np.linspace(-R*0.999, R*0.999, 200):
+        for i in np.linspace(start_val*0.999, end_val*0.999, num_points):
             j.append(i)
-            ux.append(self.peval(self.u1,np.array([xpoint,i]))[0])
-            uxPoiseuille.append(-(dpdx)*(1/(4*k))*(R**2-i**2))
-            uxPowerLaw.append(nPow/(nPow+1)*(-dpdx/(2*k))**(1/nPow)*(R**((nPow+1)/nPow) -abs(i)**((nPow+1)/nPow)))
-
+          
+            local_point_dict = fix_values.copy()
+            local_point_dict[var_coord] = i
+            if simulation_type ==3:
+                local_point = [local_point_dict[0],local_point_dict[1],local_point_dict[2]]
+            elif simulation_type ==2:
+                local_point = [local_point_dict[0],local_point_dict[1]]
+            ux.append(self.peval(self.u1,np.array(local_point))[velocity_coord])
         
-        plt.plot(
-            # uxPowerLaw/np.mean(uxPowerLaw), j,'g',
-            # uxPoiseuille/np.mean(uxPoiseuille), j,'b',
-            ux/np.mean(ux),j,'r',)
+        plt.plot(ux,j,'r',)
         
-        plt.xlabel(r'$\frac{u}{\bar{u}}$ [-]', fontsize=16)
+        plt.xlabel(r'$u$ [m/s]', fontsize=16)
         plt.ylabel(r'r [m]', fontsize=16)
-        plt.title(f'Comparison of Velocity Profiles n={nPow}', fontsize=16)
-        # plt.legend([
-        #     # 'PowerLaw Analytical',
-        #     # 'Newtonian Analytical',
-        #     # 'GNF result',
-        #     f'Thixotropic result Ta=Tc={self.problem.fluid.Ta}'
-        #     ],
-        #     loc='lower right',
-        #     )
+        plt.title(f'Velocity Profile', fontsize=16)
         plt.tight_layout()
-        plt.xlim(0, 1.6) 
-        plt.ylim(-R, R) 
+        plt.xlim(0, max(ux)*1.1) 
+        plt.ylim(start_val, end_val) 
         plt.savefig(fileName)
         plt.close()
 

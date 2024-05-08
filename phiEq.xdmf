@@ -4,15 +4,15 @@
   <Domain>
     <Grid Name="TimeSeries" GridType="Collection" CollectionType="Temporal">
       <Grid Name="mesh" GridType="Uniform">
-        <Topology NumberOfElements="1129813" TopologyType="Tetrahedron" NodesPerElement="4">
-          <DataItem Dimensions="1129813 4" NumberType="UInt" Format="HDF">phiEq.h5:/Mesh/0/mesh/topology</DataItem>
+        <Topology NumberOfElements="104406" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="104406 3" NumberType="UInt" Format="HDF">phiEq.h5:/Mesh/0/mesh/topology</DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem Dimensions="282459 3" Format="HDF">phiEq.h5:/Mesh/0/mesh/geometry</DataItem>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="53854 2" Format="HDF">phiEq.h5:/Mesh/0/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.000000000000000e+00" />
         <Attribute Name="Phi Eq" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="282459 1" Format="HDF">phiEq.h5:/VisualisationVector/0</DataItem>
+          <DataItem Dimensions="53854 1" Format="HDF">phiEq.h5:/VisualisationVector/0</DataItem>
         </Attribute>
       </Grid>
     </Grid>
