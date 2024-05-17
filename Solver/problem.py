@@ -175,19 +175,6 @@ class Problem:
         solver.parameters['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
         solver.solve()
 
-        phi.rename("Phi Eq", "")
-        Simulation_file = XDMFFile(f'phiEq.xdmf')
-        Simulation_file.parameters["flush_output"] = True
-        Simulation_file.parameters["functions_share_mesh"]= True
-        Simulation_file.write(phi, 0.0)
-
-        # ux = []
-        # j = []
-        # for i in np.linspace(-100e-6, 100e-6, 10):
-        #     j.append(i)
-        #     ux.append(phi(6e-3, i))
-        # j
-
         return (phi-phi0)/(phiInf-phi0)
 
     def Tc(self):
