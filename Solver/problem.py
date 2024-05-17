@@ -102,11 +102,21 @@ class Problem:
         DD = 0.5 * (nabla_grad(u*self.U) + nabla_grad(u*self.U).T)
         return pow(2 * inner(DD, DD), 0.5)
     
-    def etaSMD(self, k, nPow, u,eta0,etaInf):
-        eps = 1e-6
+    ''' 
+    Souza Mendes, Paulo R. and Dutra, Eduardo S. S.. 
+    "Viscosity Function for Yield-Stress Liquids" Applied Rheology, 
+    vol. 14, no. 6, 2004, pp. 296-302. https://doi.org/10.1515/arh-2004-001
+    '''
+    def etaSMD(self, k, nPow, u,eta0):
+        ''' 
+        Souza Mendes, Paulo R. and Dutra, Eduardo S. S.. 
+        "Viscosity Function for Yield-Stress Liquids" Applied Rheology, 
+        vol. 14, no. 6, 2004, pp. 296-302. https://doi.org/10.1515/arh-2004-001
+        '''
+        eps = DOLFIN_EPS
         tauY=DOLFIN_EPS
         gammaDot = self.gammaDot(u)
-        return (1-exp(-eta0*gammaDot/tauY))*(tauY/gammaDot + k * pow(gammaDot + eps, nPow - 1) + etaInf)
+        return (1-exp(-eta0*gammaDot/tauY))*(tauY/gammaDot + k * pow(gammaDot + eps, nPow - 1))
 
     def normalized_fluidity(self, phi, phi0, phiInf):
         return (phi - phi0) / (phiInf - phi0)
@@ -257,7 +267,7 @@ class Problem:
             if model=='newtonian':
                 phi = 1/self.fluid.k
             elif model=='SMD':
-                phi = 1/self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0,1/self.fluid.phiInf)
+                phi = 1/self.etaSMD(self.fluid.k, self.fluid.nPow, self.u,1/self.fluid.phi0)
         
             a03 = (
                 (
