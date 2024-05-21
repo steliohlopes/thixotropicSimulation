@@ -19,7 +19,6 @@ class Solver:
         self.relTol = relTol
         self.maxIter = maxIter
         self.preconditioner = preconditioner
-        self.start = timeit.default_timer()
     
     def SimulateEquation(self):
         
@@ -65,13 +64,20 @@ class Solver:
         Simulation_file.close()
 
         self.stop = timeit.default_timer()
-        total_time = self.stop - self.start
+        total_time = self.stop - self.problem.start
         # Output running time in a nice format.
         mins, secs = divmod(total_time, 60)
         hours, mins = divmod(mins, 60)
 
         log = open(filePath+fileName+"_log.txt","w")
-        log.write("rho="+str(self.problem.fluid.rho)+
+        log.write(f"Pin={self.problem.boundaries.Pin}")
+        log.write(f"\nUin={self.problem.boundaries.UinVector}")
+        log.write(f"\nPout={self.problem.boundaries.Pout}")
+        log.write(f"\nL={self.problem.L}")
+        log.write(f"\nU={self.problem.U}")
+        log.write(f"\nPhiIn={self.problem.boundaries.Fluidityin}")
+        log.write(f"\nabsTol={self.absTol}")
+        log.write("\nrho="+str(self.problem.fluid.rho)+
                   "\nk="+str(self.problem.fluid.k)+
                   "\nnPow="+str(self.problem.fluid.nPow)+
                   "\ntau0="+str(self.problem.fluid.tau0)+
@@ -81,6 +87,7 @@ class Solver:
                   "\nTc="+str(self.problem.fluid.Tc)                  )
         log.write("\nTotal running time: %dh:%dmin:%ds" % (hours, mins, secs))
         log.write("\nNumber of processing cores utilized for the simulation: %d" % (num_procs))
+        log.write(f"\nDoF={self.problem.mesh.DoF}")
         log.close()
 
         return
