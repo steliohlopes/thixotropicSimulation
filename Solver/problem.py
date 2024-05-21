@@ -1,6 +1,7 @@
 from dolfin import *
 import sys
 from ufl_legacy import (real,conditional,tanh)
+import timeit
 
 sys.path.append("..")
 
@@ -12,6 +13,7 @@ class Problem:
         self.boundaries = boundaries
         self.L = L
         self.U = U
+        self.start = timeit.default_timer()
 
         ##### Functions
         ## Trial and Test function(s)
