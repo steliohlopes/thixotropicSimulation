@@ -7,12 +7,16 @@ sys.path.append("..")
 
 
 class Problem:
-    def __init__(self, mesh, fluid, boundaries,L,U):
+    def __init__(self, mesh, fluid, boundaries,L,U,Pinf=None):
         self.mesh = mesh
         self.fluid = fluid
         self.boundaries = boundaries
         self.L = L
         self.U = U
+        if Pinf == None:
+            self.Pinf=self.boundaries.Pin
+        else:
+            self.Pinf=Pinf
         self.start = timeit.default_timer()
 
         ##### Functions
@@ -75,9 +79,8 @@ class Problem:
     
     # Stress Tensor
     def TT(self, u, p, phi):
-        pinf = self.boundaries.Pin
         p0 = self.boundaries.Pout
-        dp=pinf-p0
+        dp=self.Pinf-p0
         
         phiInf = self.fluid.phiInf
         phi0 = self.fluid.phi0
@@ -87,9 +90,8 @@ class Problem:
         return T
     
     def TT_direction(self, u, p, phi,direction):
-        pinf = self.boundaries.Pin
         p0 = self.boundaries.Pout
-        dp=pinf-p0
+        dp=self.Pinf-p0
         
         phiInf = self.fluid.phiInf
         phi0 = self.fluid.phi0
