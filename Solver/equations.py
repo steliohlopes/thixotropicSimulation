@@ -45,22 +45,28 @@ class Solver:
         comm = MPI.comm_world
         num_procs = comm.Get_size()
         (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
+        DD = 0.5 * (nabla_grad(self.u1*self.problem.U) + nabla_grad(self.u1*self.problem.U).T)
+
         if dimensional:
             U = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Uel)
             self.u1 = project(self.u1*self.problem.U,U)
             Q = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Pel)
-            self.p1 = project(self.p1*(self.problem.boundaries.Pin - self.problem.boundaries.Pout) + self.problem.boundaries.Pout,Q)
+            self.p1 = project(self.p1*(self.problem.Pinf - self.problem.boundaries.Pout) + self.problem.boundaries.Pout,Q)
             V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
-            self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V)
+            self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V) 
+            self.gammadot = project(pow(2 * inner(DD, DD), 0.5),V)
+        
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
         self.f1.rename("Fluidity", "")
+        self.gammadot.rename("Gammadot", "")
         Simulation_file = XDMFFile(filePath+fileName+".xdmf")
         Simulation_file.parameters["flush_output"] = True
         Simulation_file.parameters["functions_share_mesh"]= True
         Simulation_file.write(self.u1, 0.0)
         Simulation_file.write(self.p1, 0.0)
         Simulation_file.write(self.f1, 0.0)
+        Simulation_file.write(self.gammadot, 0.0)
         Simulation_file.close()
 
         self.stop = timeit.default_timer()
