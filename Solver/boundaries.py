@@ -1,20 +1,20 @@
 import sys
 from dolfin import *
+from mpi4py import MPI as pyMPI
 
 sys.path.append("..")
 
 
 class Boundaries:
-    def __init__(self, mesh, Pin=None, UinVector=None,Umax_dim=None,Origin=None,R=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None,symmetryAxis=None):
+    def __init__(self, mesh, UinVector_dim=None,UinMax_dim=None,Origin=None,R=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None,symmetryAxis=None):
         ###########################################
         # inletCondition = 0 -> Constant inlet Pressure Condition
         # inletCondition = 1 -> Constant inlet X Velocity  Condition
-        # inletCondition = 2 -> fully developed flow inlet X Velocity  Condition
-
+        comm = MPI.comm_world
+        
         self.mesh = mesh
-        self.Pin = Pin
-        self.UinVector = UinVector
-        self.Umax_dim = Umax_dim
+        self.UinVector_dim = UinVector_dim
+        self.UinMax_dim = UinMax_dim
         self.Origin = Origin
         self.R = R
         self.Fluidityin = Fluidityin
@@ -31,10 +31,16 @@ class Boundaries:
         self.Pout = Pout
         self.bcs = []
 
-        if Pin!=None:
-            self.inletCondition=0
-        elif UinVector != None or Umax_dim!=None:
+        #! For future implementation: Inlet Pressure Condition
+        # self.Pin = Pin
+        # if Pin!=None:
+        #     self.inletCondition=0
+        if UinVector_dim != None or UinMax_dim!=None:
             self.inletCondition=1
+        else:
+            if comm.rank ==0:
+                begin("\n***Velocity boundary conditions not provided.***\n***Please set either UinVector_dim or UinMax_dim to define inlet velocity.***")
+            sys.exit()
 
         if self.mesh.Dim == 3:
             noSlipVector = Constant((0.0, 0.0, 0.0))
@@ -74,21 +80,27 @@ class Boundaries:
                     )
 
         if self.inletCondition == 1:
-            if UinVector!=None:
+            if UinVector_dim!=None:
                 for sub in self.inletBCs:
                     self.bcs.append(
                         DirichletBC(
                             self.mesh.functionSpace.sub(0),
-                            Constant(self.UinVector),
+                            Constant(self.UinVector_dim),
                             self.mesh.mf,
                             self.mesh.subdomains[sub],
                         )
                     )
-            elif Umax_dim!=None:
+            elif UinMax_dim!=None:
+                if self.Origin==None or self.R==None:
+                    if comm.rank ==0:
+                        begin("\n***Origin or radius not provided.***\n***Please set Origin and R to define inlet velocity profile.***")
+                    sys.exit()
                 if self.mesh.Dim == 3:
-                    u_D = Expression( ('Umax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0','0') ,degree=2,Umax_dim=Umax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
+                    u_D = Expression( ('UinMax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0','0') ,
+                                     degree=2,UinMax_dim=UinMax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
                 elif self.mesh.Dim == 2:
-                    u_D = Expression( ('Umax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0') ,degree=2,Umax_dim=Umax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
+                    u_D = Expression( ('UinMax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0') ,
+                                     degree=2,UinMax_dim=UinMax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
                 for sub in self.inletBCs:
                     self.bcs.append(
                         DirichletBC(

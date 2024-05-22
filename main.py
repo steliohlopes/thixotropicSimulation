@@ -13,7 +13,7 @@ meshFile = "Constricted"
 simulation_type = '2D'
 
 L = 24e-3
-U=1e-2
+U=1e-5
 Origin=[-L/2,0]
 R = 100e-6
 
@@ -62,19 +62,23 @@ if comm.rank ==0:
         info("L characteristic {}".format(L))
         info("U characteristic {}".format(U))
 
-boundaries = Boundaries(mesh=mesh, Umax_dim=1,Origin=Origin,R=R)
+boundaries = Boundaries(mesh=mesh, UinMax_dim=1,Origin=Origin,R=R)
 
-problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L,Pinf=10000)
+problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
 
 problem.Equation('newtonian')
 newtonianTest = Solver(problem)
 newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ConstrictedNewtonian",dimensional=True)
-# newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName="CoatingHangerSymmetry2Newtonian.png")
-wini = problem.w
-del newtonianTest
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ConstrictedNewtonian",dimensional=False)
 
 # boundaries.change_parameter(Fluidityin=0.1)
+problem.Equation('SMD')
+newtonianTest = Solver(problem)
+newtonianTest.SimulateEquation()
+newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ConstrictedSMD",dimensional=False)
+
+# newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName="CoatingHangerSymmetry2Newtonian.png")
+
 # problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L,Pinf=Pinf)
 # problem2.Equation(wini=wini,model='thixotropic')
 
