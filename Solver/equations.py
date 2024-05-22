@@ -41,21 +41,21 @@ class Solver:
 
         return self.problem.w
     
-    def SaveSimulationData(self,filePath,fileName,dimensional=False):
+    def SaveSimulationData(self,filePath,fileName,dimensional=True):
         comm = MPI.comm_world
         num_procs = comm.Get_size()
         (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
+        V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
         DD = 0.5 * (nabla_grad(self.u1*self.problem.U) + nabla_grad(self.u1*self.problem.U).T)
+        self.gammadot = project(pow(2 * inner(DD, DD), 0.5),V)
 
         if dimensional:
+            self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V) 
             U = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Uel)
             self.u1 = project(self.u1*self.problem.U,U)
             Q = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Pel)
-            self.p1 = project(self.p1*(self.problem.Pinf - self.problem.boundaries.Pout) + self.problem.boundaries.Pout,Q)
-            V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
-            self.f1 = project(self.f1*(self.problem.fluid.phiInf - self.problem.fluid.phi0) + self.problem.fluid.phi0,V) 
-            self.gammadot = project(pow(2 * inner(DD, DD), 0.5),V)
-        
+            self.p1 = project(self.p1*self.problem.U/(self.problem.L*(self.problem.fluid.phiInf-self.problem.fluid.phi0)),Q)
+            
         self.u1.rename("Velocity Vector", "")
         self.p1.rename("Pressure", "")
         self.f1.rename("Fluidity", "")
@@ -76,8 +76,8 @@ class Solver:
         hours, mins = divmod(mins, 60)
 
         log = open(filePath+fileName+"_log.txt","w")
-        log.write(f"Pin={self.problem.boundaries.Pin}")
-        log.write(f"\nUin={self.problem.boundaries.UinVector}")
+        log.write(f"UinVector_dim={self.problem.boundaries.UinVector_dim}")
+        log.write(f"\nUinMax_dim={self.problem.boundaries.UinMax_dim}")
         log.write(f"\nPout={self.problem.boundaries.Pout}")
         log.write(f"\nL={self.problem.L}")
         log.write(f"\nU={self.problem.U}")

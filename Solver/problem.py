@@ -7,16 +7,12 @@ sys.path.append("..")
 
 
 class Problem:
-    def __init__(self, mesh, fluid, boundaries,L,U,Pinf=None):
+    def __init__(self, mesh, fluid, boundaries,L,U):
         self.mesh = mesh
         self.fluid = fluid
         self.boundaries = boundaries
         self.L = L
         self.U = U
-        if Pinf == None:
-            self.Pinf=self.boundaries.Pin
-        else:
-            self.Pinf=Pinf
         self.start = timeit.default_timer()
 
         ##### Functions
@@ -39,91 +35,96 @@ class Problem:
                 self.w[3],
             )
 
-    # Deformation Tensor
-    def DD(self, u):
-        # Cartesian
-        D = 0.5*self.U * (nabla_grad(u) + nabla_grad(u).T)
-        return D
-
-    def DD_direction(self, u,direction):
+    # # Deformation Tensor Dimensionless
+    def DD(self, u_dim,direction=None):
         #Full Deformation Tensor
         # D = sym(as_tensor([ [        u[0].dx(0)           , (u[1].dx(0) + u[0].dx(1))*0.5 , (u[0].dx(2) + u[2].dx(0))*0.5 ],
         #                     [(u[1].dx(0) + u[0].dx(1))*0.5,         u[1].dx(1)            , (u[2].dx(1) + u[1].dx(2))*0.5 ],
         #                     [(u[0].dx(2) + u[2].dx(0))*0.5, (u[2].dx(1) + u[1].dx(2))*0.5 ,         u[2].dx(2)] ]))
-        if self.mesh.Dim == 3:
-            if direction==0:
-                D = sym(as_tensor([ [        0        ,     (u[0].dx(1))*self.U*0.5         , (u[0].dx(2))*self.U*0.5 ],
-                                [(u[0].dx(1))*self.U*0.5,         u[1].dx(1)*self.U            , (u[2].dx(1) + u[1].dx(2))*self.U*0.5 ],
-                                [(u[0].dx(2))*self.U*0.5, (u[2].dx(1) + u[1].dx(2))*self.U*0.5 ,         u[2].dx(2)*self.U] ]))
-                
-            elif direction==1:
-                D = sym(as_tensor([ [        u[0].dx(0)*self.U          , (u[1].dx(0))*self.U*0.5 , (u[0].dx(2) + u[2].dx(0))*self.U*0.5 ],
-                            [(u[1].dx(0))*self.U*0.5,         0            , ( u[1].dx(2))*self.U*0.5 ],
-                            [(u[0].dx(2) + u[2].dx(0))*self.U*0.5, ( u[1].dx(2))*self.U*0.5 ,         u[2].dx(2)*self.U] ]))
-                
-            elif direction==2:
-                D = sym(as_tensor([ [        u[0].dx(0)*self.U           , (u[1].dx(0) + u[0].dx(1))*self.U*0.5 , ( u[2].dx(0))*self.U*0.5 ],
-                                [(u[1].dx(0) + u[0].dx(1))*self.U*0.5,         u[1].dx(1)*self.U            , (u[2].dx(1))*self.U*0.5 ],
-                                [(      u[2].dx(0))*self.U*0.5,            (u[2].dx(1))*self.U*0.5          ,        0] ]))
-                
-        elif self.mesh.Dim == 2:
-            if direction==0:
-                D = sym(as_matrix([ [        0        ,     (u[0].dx(1))*self.U*0.5      ],
-                                [(u[0].dx(1))*self.U*0.5,         u[1].dx(1)*self.U        ],]))
-                
-            elif direction==1:
-                D = sym(as_matrix([ [u[0].dx(0)*self.U      , (u[1].dx(0))*self.U*0.5 ],
-                                [(u[1].dx(0))*self.U*0.5,         0        ] ]))
+        if direction==None:
+            D = 0.5 * (nabla_grad(u_dim) + nabla_grad(u_dim).T)
+        else:
+            if self.mesh.Dim == 3:
+                if direction==0:
+                    D = sym(as_tensor([ [        0        ,     (u_dim[0].dx(1))*0.5         , (u_dim[0].dx(2))*0.5 ],
+                                    [(u_dim[0].dx(1))*0.5,         u_dim[1].dx(1)            , (u_dim[2].dx(1) + u_dim[1].dx(2))*0.5 ],
+                                    [(u_dim[0].dx(2))*0.5, (u_dim[2].dx(1) + u_dim[1].dx(2))*0.5 ,         u_dim[2].dx(2)] ]))
+                    
+                elif direction==1:
+                    D = sym(as_tensor([ [        u_dim[0].dx(0)          , (u_dim[1].dx(0))*0.5 , (u_dim[0].dx(2) + u_dim[2].dx(0))*0.5 ],
+                                [(u_dim[1].dx(0))*0.5,         0            , ( u_dim[1].dx(2))*0.5 ],
+                                [(u_dim[0].dx(2) + u_dim[2].dx(0))*0.5, ( u_dim[1].dx(2))*0.5 ,         u_dim[2].dx(2)] ]))
+                    
+                elif direction==2:
+                    D = sym(as_tensor([ [        u_dim[0].dx(0)           , (u_dim[1].dx(0) + u_dim[0].dx(1))*0.5 , ( u_dim[2].dx(0))*0.5 ],
+                                    [(u_dim[1].dx(0) + u_dim[0].dx(1))*0.5,         u_dim[1].dx(1)            , (u_dim[2].dx(1))*0.5 ],
+                                    [(      u_dim[2].dx(0))*0.5,            (u_dim[2].dx(1))*0.5          ,        0] ]))
+                    
+            elif self.mesh.Dim == 2:
+                if direction==0:
+                    D = sym(as_matrix([ [        0        ,     (u_dim[0].dx(1))*0.5      ],
+                                    [(u_dim[0].dx(1))*0.5,         u_dim[1].dx(1)        ],]))
+                    
+                elif direction==1:
+                    D = sym(as_matrix([ [u_dim[0].dx(0)      , (u_dim[1].dx(0))*0.5 ],
+                                    [(u_dim[1].dx(0))*0.5,         0        ] ]))
                 
         return D
     
     # Stress Tensor
-    def TT(self, u, p, phi):
-        p0 = self.boundaries.Pout
-        dp=self.Pinf-p0
+    # def TT(self, u_dim, p_dim, phi_dim):
+    #     phiInf = self.fluid.phiInf
+    #     phi0 = self.fluid.phi0
+    #     dphi = phiInf - phi0
         
-        phiInf = self.fluid.phiInf
-        phi0 = self.fluid.phi0
-        dphi = phiInf - phi0
-        # Cartesian
-        T = 2/dp * 1/(phi*dphi + phi0) * self.DD(u) - ((p*dp + p0)/dp) * Identity(len(u))
-        return T
+    #     # Cartesian
+    #     T = (2*self.L*dphi)/(phi_dim*dphi+phi0) * self.DD(u_dim) - (p_dim * Identity(len(u_dim)))
+    #     return T
     
-    def TT_direction(self, u, p, phi,direction):
-        p0 = self.boundaries.Pout
-        dp=self.Pinf-p0
-        
+    def TT(self, u_dim, p_dim, phi_dim,direction=None):
         phiInf = self.fluid.phiInf
         phi0 = self.fluid.phi0
         dphi = phiInf - phi0
         # Cartesian
-        T = 2/dp * 1/(phi*dphi + phi0) * self.DD_direction(u,direction) - ((p*dp + p0)/dp) * Identity(len(u))
+        T = (2*self.L*dphi)/(phi_dim*dphi+phi0) * self.DD(u_dim,direction) - (p_dim * Identity(len(u_dim)))
         
         return T
 
-    #Dimensional GammaDot
-    def gammaDot(self, u):
-        DD = 0.5 * (nabla_grad(u*self.U) + nabla_grad(u*self.U).T)
+    def gammaDot(self, u_dim):
+        """
+        Calculates the dimensional magnitude of the strain rate tensor for a given velocity field.
+
+        Args:
+            u_dim : Dimensionless velocity field.
+
+        Returns:
+            float: The dimensional magnitude of the strain rate tensor.
+        """
+        DD = 0.5 * (nabla_grad(u_dim*self.U) + nabla_grad(u_dim*self.U).T)
         return pow(2 * inner(DD, DD), 0.5)
     
-    ''' 
-    Souza Mendes, Paulo R. and Dutra, Eduardo S. S.. 
-    "Viscosity Function for Yield-Stress Liquids" Applied Rheology, 
-    vol. 14, no. 6, 2004, pp. 296-302. https://doi.org/10.1515/arh-2004-001
-    '''
-    def etaSMD(self, k, nPow, u,eta0):
-        ''' 
-        Souza Mendes, Paulo R. and Dutra, Eduardo S. S.. 
-        "Viscosity Function for Yield-Stress Liquids" Applied Rheology, 
-        vol. 14, no. 6, 2004, pp. 296-302. https://doi.org/10.1515/arh-2004-001
-        '''
-        eps = DOLFIN_EPS
-        tauY=DOLFIN_EPS
-        gammaDot = self.gammaDot(u)
-        return (1-exp(-eta0*gammaDot/tauY))*(tauY/gammaDot + k * pow(gammaDot + eps, nPow - 1))
+    def etaSMD(self, k, nPow, u_dim,eta0):
+        """
+        Calculates the viscosity using the Souza-Mendes-Dutra model.
 
-    def normalized_fluidity(self, phi, phi0, phiInf):
-        return (phi - phi0) / (phiInf - phi0)
+        This function implements the viscosity model described in:
+
+        Souza Mendes, Paulo R. and Dutra, Eduardo S. S..
+        "Viscosity Function for Yield-Stress Liquids" Applied Rheology,
+        vol. 14, no. 6, 2004, pp. 296-302. https://doi.org/10.1515/arh-2004-001
+
+        Args:
+            k (float): Consistency coefficient of the power-law model.
+            nPow (float): Power-law exponent.
+            u_dim: Dimensionless velocity field.
+            eta0 (float): Reference viscosity at zero shear rate.
+
+        Returns:
+            viscosity field.
+        """
+        tauY=DOLFIN_EPS
+        gammaDot = self.gammaDot(u_dim)+DOLFIN_EPS
+        return (1-exp(-eta0*gammaDot/tauY))*(tauY/gammaDot + k * pow(gammaDot, nPow - 1))
 
     def dimensionless_phieq(self, k, nPow, phi0, phiInf, u,localPhi ,sigmay=0):
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
@@ -183,7 +184,7 @@ class Problem:
 
     def Tc(self):
         tc = 663
-        return 1e-6
+        return tc
 
     def Ta(self, dimensionless_phieq):
         ta = conditional(lt(dimensionless_phieq,1e-7),1e9,59.2 * (
@@ -191,7 +192,7 @@ class Problem:
             / (pow(dimensionless_phieq, 0.4))
         ))
 
-        return 1e-6
+        return ta
 
     def S(self, dimensionless_phieq):
         s = conditional(lt(dimensionless_phieq,1e-3),1e9,(8 / (exp(dimensionless_phieq / 0.09) - 1)) + 1.2)
@@ -229,16 +230,17 @@ class Problem:
             if key in self.mesh.subdomains
         )
         # Outlet Pressure
-        L01 = inner(dot(self.mesh.n , self.TT_direction(self.u, 0 , self.f,0)), self.v) * self.mesh.ds(outletBCsIndex)
+        L01 = inner(dot(self.mesh.n , self.TT(self.u, 0 , self.f,0)), self.v) * self.mesh.ds(outletBCsIndex)
         
-        if self.boundaries.inletCondition == 0:
-            inletBCsIndex = tuple(
-                self.mesh.subdomains[key]
-                for key in self.boundaries.inletBCs
-                if key in self.mesh.subdomains
-            )
-            # Inlet Pressure
-            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, 1 , self.f, 0)), self.v) * self.mesh.ds(inletBCsIndex)
+        #! For future implementation: Inlet Pressure Condition
+        # if self.boundaries.inletCondition == 0:
+        #     inletBCsIndex = tuple(
+        #         self.mesh.subdomains[key]
+        #         for key in self.boundaries.inletBCs
+        #         if key in self.mesh.subdomains
+        #     )
+        #     # Inlet Pressure
+        #     L01 = L01+  inner(dot(self.mesh.n , self.TT(self.u, 1 , self.f, 0)), self.v) * self.mesh.ds(inletBCsIndex)
             
         if self.boundaries.symmetryBCs!=None:
             symmetryBCsIndex = tuple(
@@ -247,7 +249,7 @@ class Problem:
                 if key in self.mesh.subdomains
             )
             #Symmetry condition
-            L01 = L01+  inner(dot(self.mesh.n , self.TT_direction(self.u, self.p , self.f, self.boundaries.symmetryAxis)), self.v) * self.mesh.ds(symmetryBCsIndex)
+            L01 = L01+  inner(dot(self.mesh.n , self.TT(self.u, self.p , self.f, self.boundaries.symmetryAxis)), self.v) * self.mesh.ds(symmetryBCsIndex)
             
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()
@@ -262,7 +264,7 @@ class Problem:
         
             a03 = (
                 (
-                 self.normalized_fluidity(phi=phi,phi0=self.fluid.phi0,phiInf=self.fluid.phiInf)-self.f)/self.L
+                 ((phi - self.fluid.phi0) / (self.fluid.phiInf - self.fluid.phi0))-self.f)/self.L
                 * self.m
                 * self.mesh.dx()
             )
