@@ -12,16 +12,18 @@ meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/Constricted/"
 meshFile = "Constricted"
 simulation_type = '2D'
 
+L = 24e-3
+U=1e-2
+Origin=[-L/2,0]
+R = 100e-6
+
 # Pin = 3000
-Pout = 0
-W_outlet=10e-3
+# W_outlet=10e-3
 # L=W_outlet/2
 # H=100e-6*2
 # U = -((Pout-Pin)/L)*(H/2/(2*fluid.k))*(H-H/2)
 
-L = 24e-3
-U=1e-2
-Pinf=10000
+
 # sweep_dict={0:0.005,1:-0.0001,2:[0,0.005]}
 # velocity_coord = 0
 # num_points = 3000
@@ -60,9 +62,9 @@ if comm.rank ==0:
         info("L characteristic {}".format(L))
         info("U characteristic {}".format(U))
 
-boundaries = Boundaries(mesh=mesh, UinVector=(1,0),Pout=Pout)
+boundaries = Boundaries(mesh=mesh, Umax_dim=1,Origin=Origin,R=R)
 
-problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L,Pinf=Pinf)
+problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L,Pinf=10000)
 
 problem.Equation('newtonian')
 newtonianTest = Solver(problem)
@@ -72,11 +74,11 @@ newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ConstrictedNewtonia
 wini = problem.w
 del newtonianTest
 
-boundaries.change_parameter(Fluidityin=0.1)
-problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L,Pinf=Pinf)
-problem2.Equation(wini=wini,model='thixotropic')
+# boundaries.change_parameter(Fluidityin=0.1)
+# problem2 = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L,Pinf=Pinf)
+# problem2.Equation(wini=wini,model='thixotropic')
 
-Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
-Thixotropic.SimulateEquation()
-Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"ConstrictedThixotropic{problem2.fluid.Ta}",dimensional=True)
-# Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetry2Thixotropic{problem2.fluid.Ta}.png")
+# Thixotropic = Solver(problem2,maxIter = 100,absTol = 1e-6)
+# Thixotropic.SimulateEquation()
+# Thixotropic.SaveSimulationData(filePath=meshPath,fileName=f"ConstrictedThixotropic{problem2.fluid.Ta}",dimensional=True)
+# # Thixotropic.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetry2Thixotropic{problem2.fluid.Ta}.png")
