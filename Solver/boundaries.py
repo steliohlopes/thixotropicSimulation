@@ -5,7 +5,7 @@ sys.path.append("..")
 
 
 class Boundaries:
-    def __init__(self, mesh, Pin=None, UinVector=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None,symmetryAxis=None):
+    def __init__(self, mesh, Pin=None, UinVector=None,Umax_dim=None,Origin=None,R=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None,symmetryAxis=None):
         ###########################################
         # inletCondition = 0 -> Constant inlet Pressure Condition
         # inletCondition = 1 -> Constant inlet X Velocity  Condition
@@ -14,6 +14,9 @@ class Boundaries:
         self.mesh = mesh
         self.Pin = Pin
         self.UinVector = UinVector
+        self.Umax_dim = Umax_dim
+        self.Origin = Origin
+        self.R = R
         self.Fluidityin = Fluidityin
         self.inletBCs = inletBCs
         self.outletBCs = outletBCs
@@ -30,7 +33,7 @@ class Boundaries:
 
         if Pin!=None:
             self.inletCondition=0
-        elif UinVector != None:
+        elif UinVector != None or Umax_dim!=None:
             self.inletCondition=1
 
         if self.mesh.Dim == 3:
@@ -71,16 +74,31 @@ class Boundaries:
                     )
 
         if self.inletCondition == 1:
-            for sub in self.inletBCs:
-                self.bcs.append(
-                    DirichletBC(
-                        self.mesh.functionSpace.sub(0),
-                        Constant(self.UinVector),
-                        self.mesh.mf,
-                        self.mesh.subdomains[sub],
+            if UinVector!=None:
+                for sub in self.inletBCs:
+                    self.bcs.append(
+                        DirichletBC(
+                            self.mesh.functionSpace.sub(0),
+                            Constant(self.UinVector),
+                            self.mesh.mf,
+                            self.mesh.subdomains[sub],
+                        )
                     )
-                )
-
+            elif Umax_dim!=None:
+                if self.mesh.Dim == 3:
+                    u_D = Expression( ('Umax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0','0') ,degree=2,Umax_dim=Umax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
+                elif self.mesh.Dim == 2:
+                    u_D = Expression( ('Umax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0') ,degree=2,Umax_dim=Umax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
+                for sub in self.inletBCs:
+                    self.bcs.append(
+                        DirichletBC(
+                            self.mesh.functionSpace.sub(0),
+                            u_D,
+                            self.mesh.mf,
+                            self.mesh.subdomains[sub],
+                        )
+                    )
+        
     def change_parameter(self,Pin=None, UinVector=None,Fluidityin = None ,Pout=None,inletBCs=None,outletBCs=None,noSlipBCs=None):
         
         if Pin != None:
