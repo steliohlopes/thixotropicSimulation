@@ -111,7 +111,7 @@ class Problem:
 
         Souza Mendes, Paulo R. and Dutra, Eduardo S. S..
         "Viscosity Function for Yield-Stress Liquids" Applied Rheology,
-        vol. 14, no. 6, 2004, pp. 296-302. https://doi.org/10.1515/arh-2004-001
+        vol. 14, no. 6, 2004, pp. 296-302. DOI:10.1515/arh-2004-0016
 
         Args:
             k (float): Consistency coefficient of the power-law model.
@@ -122,9 +122,57 @@ class Problem:
         Returns:
             viscosity field.
         """
-        tauY=DOLFIN_EPS
-        gammaDot = self.gammaDot(u_dim)+DOLFIN_EPS
+        tauY=1e-5
+        gammaDot = self.gammaDot(u_dim)
         return (1-exp(-eta0*gammaDot/tauY))*(tauY/gammaDot + k * pow(gammaDot, nPow - 1))
+    
+    def calculate_inlet_phieq(self,k,nPow,phi0, phiInf):
+        V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
+        phi  = Function(V)
+        v = TestFunction(V)
+             
+        u_in = Expression('UinMax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))',
+                                     degree=2,UinMax_dim=self.boundaries.UinMax_dim*self.U,R=self.boundaries.R,OriginX=self.boundaries.Origin[0],OriginY=self.boundaries.Origin[1])
+        u = interpolate(u_in,V)
+        if self.mesh.Dim == 3:
+            TraceD2 = pow(u.dx(0),2) + pow((u.dx(1)),2) + pow(u.dx(2),2) 
+        else:
+            TraceD2 = pow(u.dx(0),2) + pow((u.dx(1)),2)
+            
+        gammadot = pow(abs(TraceD2) *0.5, 0.5)
+        stress=pow(k*(gammadot),nPow)
+        PhiIni = gammadot/(stress)
+        phi=project(PhiIni, V)
+        
+        g_s = (phi/gammadot)*pow((abs(gammadot/phi)/k),(1/nPow))/((phiInf-phi0)+(phi/gammadot)*pow((abs(gammadot/phi)/k),(1/nPow)))
+        c = 500
+        H = 0.5*(1+tanh(c*(gammadot/phi)))
+
+        G = g_s - (phi-phi0)/(phiInf-phi0) 
+
+        F = G * v * dx
+
+        J = derivative(F,phi)
+        
+        bcs = []
+        
+        # Configurando o problema variacional
+        problem = NonlinearVariationalProblem(F, phi,bcs, J)
+
+        # Configurando o solucionador não linear
+        solver = NonlinearVariationalSolver(problem)
+        
+        # Configurando os parâmetros do solucionador
+        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-10
+        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
+        solver.parameters["newton_solver"]["maximum_iterations"] = 100
+        solver.parameters['newton_solver']['krylov_solver']['nonzero_initial_guess'] = True
+        solver.solve()
+        
+        self.phiIn = interpolate(phi,V)
+        self.phiIn_dim = interpolate(Expression('(phi-phi0)/(phiInf-phi0)',degree=2,phi=phi,phi0=phi0,phiInf=phiInf),V)
+        
+        return self.phiIn_dim
 
     def dimensionless_phieq(self, k, nPow, phi0, phiInf, u,localPhi ,sigmay=0):
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
@@ -161,7 +209,7 @@ class Problem:
             bcs.append(
                 DirichletBC(
                     V,
-                    Constant(self.boundaries.Fluidityin*(phiInf-phi0)+phi0),
+                    self.phiIn,
                     self.mesh.mf,
                     self.mesh.subdomains[sub],
                 )
@@ -216,6 +264,7 @@ class Problem:
                     self.w[3],
                 )
 
+        bcs = self.boundaries.bcs
 
         a01 = (
             inner(
@@ -271,6 +320,18 @@ class Problem:
             L03 = 0
 
         if model=='thixotropic':
+            phiIn_dim = self.calculate_inlet_phieq(k=self.fluid.k,nPow=self.fluid.nPow,phi0=self.fluid.phi0, phiInf=self.fluid.phiInf)
+
+            for sub in self.boundaries.inletBCs:
+                bcs.append(
+                    DirichletBC(
+                        self.mesh.functionSpace.sub(2),
+                        phiIn_dim ,
+                        self.mesh.mf,
+                        self.mesh.subdomains[sub],
+                    )
+                )
+
             dimensionless_phieq = self.dimensionless_phieq(
                     self.fluid.k,
                     self.fluid.nPow,
@@ -376,7 +437,7 @@ class Problem:
 
         # Problem and Solver definitions
         self.problemU0 = NonlinearVariationalProblem(
-            F0, self.w, self.boundaries.bcs, J0
+            F0, self.w, bcs, J0
         )
 
         return self.problemU0
