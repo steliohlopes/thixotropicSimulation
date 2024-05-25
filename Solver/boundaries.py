@@ -96,8 +96,8 @@ class Boundaries:
                         begin("\n***Origin or radius not provided.***\n***Please set Origin and R to define inlet velocity profile.***")
                     sys.exit()
                 if self.mesh.Dim == 3:
-                    u_D = Expression( ('UinMax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0','0') ,
-                                     degree=2,UinMax_dim=UinMax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
+                    u_D = Expression( ('UinMax_dim*(1-pow((pow( pow(x[1]-OriginY,2)+pow(x[2]-OriginZ,2) ,0.5) )/R,2))','0','0') ,
+                                     degree=2,UinMax_dim=UinMax_dim,R=R,OriginZ=self.Origin[2],OriginY=self.Origin[1])
                 elif self.mesh.Dim == 2:
                     u_D = Expression( ('UinMax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0') ,
                                      degree=2,UinMax_dim=UinMax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])

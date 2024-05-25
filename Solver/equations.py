@@ -98,6 +98,28 @@ class Solver:
 
         return
     
+    def Checkpoint(self,filePath,fileName):
+        V = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Uel)
+        Q = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Pel)
+        M = FunctionSpace(self.problem.mesh.meshObj, self.problem.mesh.Fel)
+        # (u1, p1,f1) = self.problem.w.leaf_node().split()
+        u1 = project(self.problem.u,V)
+        p1 = project(self.problem.p,Q)
+        f1 = project(self.problem.f,M)
+
+
+        Simulation_file = XDMFFile(filePath + fileName + ".xdmf")
+        # Simulation_file.parameters["flush_output"] = True
+        # Simulation_file.parameters["functions_share_mesh"] = True
+
+        # Write checkpoint for each component
+        Simulation_file.write(self.problem.mesh.meshObj)
+        Simulation_file.write_checkpoint(u1, "u1", 0, XDMFFile.Encoding.HDF5, True)
+        Simulation_file.write_checkpoint(p1, "p1", 0, XDMFFile.Encoding.HDF5, True)
+        Simulation_file.write_checkpoint(f1, "f1", 0, XDMFFile.Encoding.HDF5, True)
+
+        Simulation_file.close()
+    
     def velocity_plot(self,sweep_dict,velocity_coord,num_points,fileName):
         """
         Function to create a velocity plot by sweeping a line through a 2D or 3D simulation.
