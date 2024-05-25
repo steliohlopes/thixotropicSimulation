@@ -262,14 +262,10 @@ class Problem:
             w_in.read_checkpoint(u, "u1")
             w_in.read_checkpoint(p, "p1")
             w_in.read_checkpoint(f, "f1")
-            u_array = u.vector().get_local()
-            x_coords = u_array[::2]  # Get every second element starting from index 0 (x coordinates)
-            y_coords = u_array[1::2]  # Get every second element starting from index 1 (y coordinates)
-            reorganized_u = np.concatenate((x_coords, y_coords))
 
-            W = np.concatenate([u_array, p.vector().get_local(), f.vector().get_local()])
-            self.w.vector().set_local(W)
-            self.w.vector().apply("")
+            assign(self.w.sub(0), u)
+            assign(self.w.sub(1), p)
+            assign(self.w.sub(2), f)
 
         if wini != None:
             self.w = wini
