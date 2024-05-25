@@ -2,6 +2,7 @@ from dolfin import *
 import sys
 from ufl_legacy import (real,conditional,tanh)
 import timeit
+import numpy as np
 
 sys.path.append("..")
 
@@ -247,7 +248,29 @@ class Problem:
         return s
 
     
-    def Equation(self,model ,wini=None):
+    def Equation(self,model ,wini=None,CheckPointFile=None):
+        if CheckPointFile!=None:
+            w_in =  XDMFFile(CheckPointFile)
+            u_space = FunctionSpace(self.mesh.meshObj, self.mesh.Uel)
+            p_space  = FunctionSpace(self.mesh.meshObj, self.mesh.Pel)
+            f_space  = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
+
+            u = Function(u_space)
+            p = Function(p_space)
+            f = Function(f_space)
+
+            w_in.read_checkpoint(u, "u1")
+            w_in.read_checkpoint(p, "p1")
+            w_in.read_checkpoint(f, "f1")
+            u_array = u.vector().get_local()
+            x_coords = u_array[::2]  # Get every second element starting from index 0 (x coordinates)
+            y_coords = u_array[1::2]  # Get every second element starting from index 1 (y coordinates)
+            reorganized_u = np.concatenate((x_coords, y_coords))
+
+            W = np.concatenate([u_array, p.vector().get_local(), f.vector().get_local()])
+            self.w.vector().set_local(W)
+            self.w.vector().apply("")
+
         if wini != None:
             self.w = wini
 
