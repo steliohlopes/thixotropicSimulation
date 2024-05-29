@@ -41,7 +41,7 @@ class Solver:
 
         return self.problem.w
     
-    def SaveSimulationData(self,filePath,fileName,dimensional=True):
+    def SaveSimulationData(self,filePath,fileName,dimensional=True,Checkpoint=False):
         comm = MPI.comm_world
         num_procs = comm.Get_size()
         (self.u1, self.p1,self.f1) = self.problem.w.leaf_node().split()
@@ -95,6 +95,9 @@ class Solver:
         log.write("\nNumber of processing cores utilized for the simulation: %d" % (num_procs))
         log.write(f"\nDoF={self.problem.mesh.DoF}")
         log.close()
+
+        if Checkpoint:
+            self.Checkpoint(filePath=filePath,fileName=f'{fileName}_checkpoint')
 
         return
     
