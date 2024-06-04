@@ -58,15 +58,27 @@ class Boundaries:
             )
 
         if self.symmetryBCs != None:
-            for sub in self.symmetryBCs:
-                self.bcs.append(
-                    DirichletBC(
-                        self.mesh.functionSpace.sub(0).sub(self.symmetryAxis),
-                        Constant(0.0),
-                        self.mesh.mf,
-                        self.mesh.subdomains[sub],
+            if type(self.symmetryAxis) == int:
+                for sub in self.symmetryBCs:
+                    self.bcs.append(
+                        DirichletBC(
+                            self.mesh.functionSpace.sub(0).sub(self.symmetryAxis),
+                            Constant(0.0),
+                            self.mesh.mf,
+                            self.mesh.subdomains[sub],
+                        )
                     )
-                )
+            else:
+                for i in range(len(self.symmetryAxis)):
+                    for sub in self.symmetryBCs[i]:
+                        self.bcs.append(
+                            DirichletBC(
+                                self.mesh.functionSpace.sub(0).sub(self.symmetryAxis[i]),
+                                Constant(0.0),
+                                self.mesh.mf,
+                                self.mesh.subdomains[sub],
+                            )
+                        )
 
         if self.Fluidityin != None:
             for sub in self.inletBCs:

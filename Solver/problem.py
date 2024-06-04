@@ -311,13 +311,23 @@ class Problem:
         #     L01 = L01+  inner(dot(self.mesh.n , self.TT(self.u, 1 , self.f, 0)), self.v) * self.mesh.ds(inletBCsIndex)
             
         if self.boundaries.symmetryBCs!=None:
-            symmetryBCsIndex = tuple(
-                self.mesh.subdomains[key]
-                for key in self.boundaries.symmetryBCs
-                if key in self.mesh.subdomains
-            )
-            #Symmetry condition
-            L01 = L01+  inner(dot(self.mesh.n , self.TT(self.u, self.p , self.f, self.boundaries.symmetryAxis)), self.v) * self.mesh.ds(symmetryBCsIndex)
+            if type(self.boundaries.symmetryAxis) == int:
+                symmetryBCsIndex = tuple(
+                    self.mesh.subdomains[key]
+                    for key in self.boundaries.symmetryBCs
+                    if key in self.mesh.subdomains
+                )
+                #Symmetry condition
+                L01 = L01+  inner(dot(self.mesh.n , self.TT(self.u, self.p , self.f, self.boundaries.symmetryAxis)), self.v) * self.mesh.ds(symmetryBCsIndex)
+            else:
+                for i in range(len(self.boundaries.symmetryAxis)):
+                    symmetryBCsIndex = tuple(
+                        self.mesh.subdomains[key]
+                        for key in self.boundaries.symmetryBCs[i]
+                        if key in self.mesh.subdomains
+                    )
+                    #Symmetry condition
+                    L01 = L01+  inner(dot(self.mesh.n , self.TT(self.u, self.p , self.f, self.boundaries.symmetryAxis[i])), self.v) * self.mesh.ds(symmetryBCsIndex)
             
         # Mass Conservation(Continuity)
         a02 = (self.q * div(self.u)) * self.mesh.dx()

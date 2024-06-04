@@ -8,27 +8,28 @@ import os
 
 comm = MPI.comm_world
 
-meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingHangerSymmetry/"
-meshFile = "CoatingHangerSymmetry"
+meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingHangerSymmetry2/"
+meshFile = "CoatingHangerSymmetry2"
 simulation_type = '3D'
 
-# L = 24e-3
-# U=1e-5
-# Origin=[-L/2,0]
-# R = 100e-6
+R = 10e-3
+L=168e-3
+
+Q = 0.00011371668940800001 #[m3/s]
+
+U=Q *2/(pi*pow(R,2))
+
+Origin=[-0.01,0,0]
+
+alfa = 30*(pi/180)
+slotCenter = L*tan(alfa)
+
+L_outlet = 50e-3
+R1 = 10e-3
 
 
-W_outlet=10e-3
-L=W_outlet/2
-U=5e-2
-D_inlet = 0.5e-3
-R = D_inlet/2
-L_inlet = 1e-3
+sweep_dict={0:2*R1+slotCenter+L_outlet,1:0,2:[0,L]}
 
-Origin=[-L_inlet,-R,0]
-
-
-sweep_dict={0:0.005,1:-0.0001,2:[0,0.005]}
 velocity_coord = 0
 num_points = 3000
 
@@ -53,8 +54,8 @@ if comm.rank ==0:
 
 fluid = Fluid(
         rho=1000,
-        k=1,
-        nPow=0.8,
+        k=0.799,
+        nPow=0.696,
         phi0=0.001,
         phiInf=20,
         Ta = 10,
@@ -66,18 +67,24 @@ if comm.rank ==0:
         info("L characteristic {}".format(L))
         info("U characteristic {}".format(U))
 
-boundaries = Boundaries(mesh=mesh, UinMax_dim=1,Origin=Origin,R=R,symmetryBCs=['Symmetry'],symmetryAxis=2)
+boundaries = Boundaries(mesh=mesh, UinMax_dim=1,Origin=Origin,R=R,symmetryBCs=[['SymmetryY'],['SymmetryZ']],symmetryAxis=[1,2])
 
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
 
-problem.Equation('newtonian')
-newtonianTest = Solver(problem)
-newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetryNewtonian",dimensional=True)
-newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetryThixotropic{problem.fluid.Ta}.csv")
+# problem.Equation('newtonian')
+# newtonianTest = Solver(problem)
+# newtonianTest.SimulateEquation()
+# newtonianTest.SaveSimulationData(filePath=meshPath,fileName=f"{meshFile}Newtonian",dimensional=True,Checkpoint=True)
+# newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"{meshPath}{meshFile}Newtonian.csv")
 
-wini = problem.w
-del problem, newtonianTest
+
+# problem.Equation('SMD')
+# newtonianTest = Solver(problem)
+# newtonianTest.SaveSimulationData(filePath=meshPath,fileName=f"{meshFile}SMD",dimensional=True,Checkpoint=True)
+# newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"{meshPath}{meshFile}SMD.csv")
+
+# wini = problem.w
+# del problem, newtonianTest
 
 times = [10,5,1,0.1]
 for i in times:
@@ -85,22 +92,16 @@ for i in times:
         fluid.Tc=i
         try:
                 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries,U = U, L=L)
-                problem.Equation('thixotropic',wini=wini)
+                problem.Equation('thixotropic',CheckPointFile=f'{meshPath}{meshFile}SMD_checkpoint.xdmf')
                 newtonianTest = Solver(problem)
                 newtonianTest.SimulateEquation()
-                newtonianTest.SaveSimulationData(filePath=meshPath,fileName=f"CoatingHangerSymmetryThixotropic{problem.fluid.Ta}",dimensional=True)
-                newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"CoatingHangerSymmetryThixotropic{problem.fluid.Ta}.csv")
-                wini=problem.wini
+                newtonianTest.SaveSimulationData(filePath=meshPath,fileName=f"{meshFile}Thixotropic{problem.fluid.Ta}",dimensional=True,Checkpoint=True)
+                newtonianTest.velocity_plot(sweep_dict=sweep_dict,velocity_coord=velocity_coord,num_points=num_points,fileName=f"{meshPath}{meshFile}Thixotropic{problem.fluid.Ta}.csv")
         except:
                 continue
 
 
 
-# boundaries.change_parameter(Fluidityin=0.1)
-# problem.Equation('SMD')
-# newtonianTest = Solver(problem)
-# newtonianTest.SimulateEquation()
-# newtonianTest.SaveSimulationData(filePath=meshPath,fileName="ConstrictedSMD",dimensional=False)
 
 
 
