@@ -81,6 +81,7 @@ class Solver:
         log.write(f"\nPout={self.problem.boundaries.Pout}")
         log.write(f"\nL={self.problem.L}")
         log.write(f"\nU={self.problem.U}")
+        log.write(f"\nP={self.problem.P}")
         log.write(f"\nPhiIn={self.problem.boundaries.Fluidityin}")
         log.write(f"\nabsTol={self.absTol}")
         log.write("\nrho="+str(self.problem.fluid.rho)+
