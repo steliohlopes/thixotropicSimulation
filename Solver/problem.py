@@ -8,12 +8,13 @@ sys.path.append("..")
 
 
 class Problem:
-    def __init__(self, mesh, fluid, boundaries,L,U):
+    def __init__(self, mesh, fluid, boundaries,L,U,P):
         self.mesh = mesh
         self.fluid = fluid
         self.boundaries = boundaries
         self.L = L
         self.U = U
+        self.P = P
         self.start = timeit.default_timer()
 
         ##### Functions
@@ -87,7 +88,7 @@ class Problem:
         phi0 = self.fluid.phi0
         dphi = phiInf - phi0
         # Cartesian
-        T = (2*self.L*dphi)/(phi_dim*dphi+phi0) * self.DD(u_dim,direction) - (p_dim * Identity(len(u_dim)))
+        T = (2*self.U/self.P)/(phi_dim*dphi+phi0) * self.DD(u_dim,direction) - (p_dim * Identity(len(u_dim)))
         
         return T
 
