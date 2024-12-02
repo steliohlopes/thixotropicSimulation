@@ -77,11 +77,9 @@ class Solver:
 
         log = open(filePath+fileName+"_log.txt","w")
         log.write(f"UinVector_dim={self.problem.boundaries.UinVector_dim}")
-        log.write(f"\nUinMax_dim={self.problem.boundaries.UinMax_dim}")
+        log.write(f"\nQ={self.problem.Q}")
         log.write(f"\nPout={self.problem.boundaries.Pout}")
         log.write(f"\nL={self.problem.L}")
-        log.write(f"\nU={self.problem.U}")
-        log.write(f"\nPhiIn={self.problem.boundaries.Fluidityin}")
         log.write(f"\nabsTol={self.absTol}")
         log.write("\nrho="+str(self.problem.fluid.rho)+
                   "\nk="+str(self.problem.fluid.k)+

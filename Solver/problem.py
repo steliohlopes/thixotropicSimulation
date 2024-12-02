@@ -8,12 +8,14 @@ sys.path.append("..")
 
 
 class Problem:
-    def __init__(self, mesh, fluid, boundaries,L,U):
+    def __init__(self, mesh, fluid, boundaries,L,Q):
         self.mesh = mesh
         self.fluid = fluid
         self.boundaries = boundaries
         self.L = L
-        self.U = U
+        self.Q = Q
+        self.U = (self.Q/(pi*pow(self.boundaries.R,3)))*((3*self.fluid.nPow+1)/(pow(self.boundaries.R,(1/self.fluid.nPow))*(self.fluid.nPow+1))*(pow(self.boundaries.R,((self.fluid.nPow+1)/self.fluid.nPow))))
+
         self.start = timeit.default_timer()
 
         ##### Functions
@@ -131,10 +133,10 @@ class Problem:
         V = FunctionSpace(self.mesh.meshObj, self.mesh.Fel)
         phi  = Function(V)
         v = TestFunction(V)
-             
-        u_in = Expression('UinMax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))',
-                                     degree=2,UinMax_dim=self.boundaries.UinMax_dim*self.U,R=self.boundaries.R,OriginX=self.boundaries.Origin[0],OriginY=self.boundaries.Origin[1])
-        u = interpolate(u_in,V)
+            
+        Uinlet = Expression( ('(Q/(pi*pow(R,3)))*((3*n+1)/(pow(R,(1/n))*(n+1))*(pow(R,((n+1)/n))-pow(pow(pow(x[1] - y_0 ,2)+pow(x[2] - z_0,2),0.5),((n+1)/n))))') ,
+                                    degree=2,R=self.boundaries.R,z_0=self.boundaries.Origin[2],y_0=self.boundaries.Origin[1],pi=pi,n=self.fluid.nPow,Q=self.Q)
+        u = interpolate(Uinlet,V)
         if self.mesh.Dim == 3:
             TraceD2 = pow(u.dx(0),2) + pow((u.dx(1)),2) + pow(u.dx(2),2) 
         else:
