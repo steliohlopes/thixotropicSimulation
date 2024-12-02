@@ -4,7 +4,7 @@ SetFactory("OpenCASCADE");
 
 // Parametros de geometria
 R_inlet = 10e-3;
-L_inlet = 20e-3; 
+L_inlet = 80e-3; 
 H_outlet = 1.5e-3;
 W_outlet = 168e-3; //half slot
 alfa = 30*(Pi/180); //radianos
@@ -13,7 +13,7 @@ R1 = 10e-3;
 R2 = 5e-3;
 slotCenter = W_outlet*Tan(alfa);
 // Parametro de malha
-MeshFactor = 2e-3;
+MeshFactor = 4e-3;
 
 // R1
 pR1Back = newp; Point(pR1Back) = {0,0,0,MeshFactor};
@@ -113,7 +113,7 @@ Coherence;
 
 Physical Surface("Inlet") = {36};
 Physical Surface("Outlet") = {41};
-Physical Surface("Wall") = {32,39,38,42,44};
+Physical Surface("Wall") = {32,33,39,38,42,44};
 Physical Surface("SymmetryZ") = {37,43};
 Physical Surface("SymmetryY") = {35,40};
 Physical Volume("Fluid") = {33,34};
@@ -136,10 +136,10 @@ Field[1].CurvesList = {44,49};//outlet lines
 
 Field[2] = Threshold;
 Field[2].InField = 1;
-Field[2].SizeMin = MeshFactor;
+Field[2].SizeMin = MeshFactor/3;
 Field[2].SizeMax = MeshFactor;
-Field[2].DistMin = L_outlet;
-Field[2].DistMax =L_outlet+R2;
+Field[2].DistMin = W_outlet;
+Field[2].DistMax =W_outlet+R2;
 
 Field[3] = Distance;
 Field[3].CurvesList = {29,33,35};
@@ -149,7 +149,7 @@ Field[4].InField = 3;
 Field[4].SizeMin = MeshFactor;
 Field[4].SizeMax = MeshFactor;
 Field[4].DistMin = L_inlet;
-Field[4].DistMax =L_inlet*5;
+Field[4].DistMax =L_inlet+W_outlet;
 
 Field[5] = Min;
 Field[5].FieldsList = {2,4};
