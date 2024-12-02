@@ -6,18 +6,17 @@ sys.path.append("..")
 
 
 class Boundaries:
-    def __init__(self, mesh, UinVector_dim=None,UinMax_dim=None,Origin=None,R=None,Fluidityin = None ,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None,symmetryAxis=None):
+    def __init__(self, mesh,fluid=None, UinVector_dim=None,Origin=None,R=None,Pout=0,inletBCs=["Inlet"],outletBCs=["Outlet"],noSlipBCs=["Wall"],symmetryBCs=None,symmetryAxis=None):
         ###########################################
         # inletCondition = 0 -> Constant inlet Pressure Condition
         # inletCondition = 1 -> Constant inlet X Velocity  Condition
         comm = MPI.comm_world
         
         self.mesh = mesh
+        self.fluid = fluid
         self.UinVector_dim = UinVector_dim
-        self.UinMax_dim = UinMax_dim
         self.Origin = Origin
         self.R = R
-        self.Fluidityin = Fluidityin
         self.inletBCs = inletBCs
         self.outletBCs = outletBCs
         self.noSlipBCs=noSlipBCs
@@ -35,11 +34,11 @@ class Boundaries:
         # self.Pin = Pin
         # if Pin!=None:
         #     self.inletCondition=0
-        if UinVector_dim != None or UinMax_dim!=None:
+        if self.UinVector_dim != None or self.fluid!=None:
             self.inletCondition=1
         else:
             if comm.rank ==0:
-                begin("\n***Velocity boundary conditions not provided.***\n***Please set either UinVector_dim or UinMax_dim to define inlet velocity.***")
+                begin("\n***Velocity boundary conditions not provided.***\n***Please set either UinVector_dim or fluid to define inlet velocity.***")
             sys.exit()
 
         if self.mesh.Dim == 3:
@@ -80,19 +79,8 @@ class Boundaries:
                             )
                         )
 
-        if self.Fluidityin != None:
-            for sub in self.inletBCs:
-                    self.bcs.append(
-                        DirichletBC(
-                            self.mesh.functionSpace.sub(2),
-                            Constant(self.Fluidityin),
-                            self.mesh.mf,
-                            self.mesh.subdomains[sub],
-                        )
-                    )
-
         if self.inletCondition == 1:
-            if UinVector_dim!=None:
+            if self.UinVector_dim!=None:
                 for sub in self.inletBCs:
                     self.bcs.append(
                         DirichletBC(
@@ -102,86 +90,30 @@ class Boundaries:
                             self.mesh.subdomains[sub],
                         )
                     )
-            elif UinMax_dim!=None:
-                if self.Origin==None or self.R==None:
-                    if comm.rank ==0:
-                        begin("\n***Origin or radius not provided.***\n***Please set Origin and R to define inlet velocity profile.***")
-                    sys.exit()
-                if self.mesh.Dim == 3:
-                    u_D = Expression( ('UinMax_dim*(1-pow((pow( pow(x[1]-OriginY,2)+pow(x[2]-OriginZ,2) ,0.5) )/R,2))','0','0') ,
-                                     degree=2,UinMax_dim=UinMax_dim,R=R,OriginZ=self.Origin[2],OriginY=self.Origin[1])
-                elif self.mesh.Dim == 2:
-                    u_D = Expression( ('UinMax_dim*(1-pow((pow( pow(x[0]-OriginX,2)+pow(x[1]-OriginY,2) ,0.5) )/R,2))','0') ,
-                                     degree=2,UinMax_dim=UinMax_dim,R=R,OriginX=self.Origin[0],OriginY=self.Origin[1])
-                for sub in self.inletBCs:
-                    self.bcs.append(
-                        DirichletBC(
-                            self.mesh.functionSpace.sub(0),
-                            u_D,
-                            self.mesh.mf,
-                            self.mesh.subdomains[sub],
-                        )
-                    )
-        
-    def change_parameter(self,Pin=None, UinVector=None,Fluidityin = None ,Pout=None,inletBCs=None,outletBCs=None,noSlipBCs=None):
-        
-        if Pin != None:
-            self.Pin = Pin
-        if UinVector!= None:
-            self.UinVector = UinVector
-        if Fluidityin!= None:
-            self.Fluidityin = Fluidityin
-        if inletBCs!= None:
-            self.inletBCs = inletBCs
-        if outletBCs!= None:
-         self.outletBCs = outletBCs
-        if noSlipBCs!= None:
-            self.noSlipBCs=noSlipBCs
-        if Pout!= None:
-            self.Pout = Pout
-        if Pin!=None:
-            self.inletCondition=0
-        elif UinVector != None:
-            self.inletCondition=1
 
-
-        if noSlipBCs!= None:
-            self.bcs = []
-
+            if self.Origin==None or self.R==None:
+                if comm.rank ==0:
+                    begin("\n***Origin or radius not provided.***\n***Please set Origin and R to define inlet velocity profile.***")
+                sys.exit()
             if self.mesh.Dim == 3:
-                noSlipVector = Constant((0.0, 0.0, 0.0))
-            elif self.mesh.Dim == 2:
-                noSlipVector = Constant((0.0, 0.0))
+                '''
+                Inlet Velocity power Law 
+                u(y,z) = (Q/(pi*pow(R,3)))*((3*n+1)/(pow(R,(1/n))*(n+1))*(pow(R,((n+1)/n))-pow(pow(pow(y - y_0 ,2)+pow(z - z_0,2),0.5),((n+1)/n))))
 
-            for sub in self.noSlipBCs:
+                Inlet Velocity dimensionless power Law 
+                u*(y,z) = 1-pow(pow(pow(y - y_0 ,2)+pow(z - z_0,2),0.5)/R,((n+1)/n))
+                '''
+                UinletDimVec = Expression( ('1-pow(pow(pow(x[1] - y_0 ,2)+pow(x[2] - z_0,2),0.5)/R,((n+1)/n))','0','0') ,
+                                    degree=2,R=self.R,z_0=self.Origin[2],y_0=self.Origin[1],n=self.fluid.nPow)
+            # elif self.mesh.Dim == 2:
+            #     UinletDim = Expression( ('(Q/(pi*pow(R,3)))*((3*n+1)/(pow(R,(1/n))*(n+1))*(pow(R,((n+1)/n))-pow(pow(pow(x[0] - OriginX ,2)+pow(x[1] - OriginY,2),0.5),((n+1)/n))))','0') ,
+            #                         degree=2,Q=self.Q,R=self.R,OriginX=self.Origin[0],OriginY=self.Origin[1],pi=pi,n=self.fluid.nPow)
+            for sub in self.inletBCs:
                 self.bcs.append(
                     DirichletBC(
                         self.mesh.functionSpace.sub(0),
-                        noSlipVector,
+                        UinletDimVec,
                         self.mesh.mf,
                         self.mesh.subdomains[sub],
                     )
                 )
-
-        if self.Fluidityin != None:
-            for sub in self.inletBCs:
-                    self.bcs.append(
-                        DirichletBC(
-                            self.mesh.functionSpace.sub(2),
-                            Constant(self.Fluidityin),
-                            self.mesh.mf,
-                            self.mesh.subdomains[sub],
-                        )
-                    )
-
-        if UinVector!= None:
-            if self.inletCondition == 1:
-                for sub in self.inletBCs:
-                    self.bcs.append(
-                        DirichletBC(
-                            self.mesh.functionSpace.sub(0),
-                            Constant(self.UinVector),
-                            self.mesh.mf,
-                            self.mesh.subdomains[sub],
-                        )
-                    )
