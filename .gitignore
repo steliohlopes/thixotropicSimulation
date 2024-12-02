@@ -1,1 +1,8 @@
 *.pyc
+*.xdmf
+*.h5
+*.txt
+*.csv
+*.png
+*.geo
+*.msh
