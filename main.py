@@ -1,16 +1,16 @@
-from PreProcessing.mesh import FiniteElementMesh
-from ProblemInputs import Fluid
-from Solver.boundaries import Boundaries
-from Solver.equations import Solver
-from Solver.problem import Problem
+from src.core.mesh import FiniteElementMesh
+from src.core.ProblemInputs import Fluid
+from src.core.boundaries import Boundaries
+from src.core.equations import Solver
+from src.core.problem import Problem
 from dolfin import *
 import os
 
 comm = MPI.comm_world
 
-meshPath = "/home/stelio/thixotropicSimulation/PreProcessing/CoatingHangerMeng/"
-meshFile = "CoatingHangerMeng"
-simulation_type = '3D'
+meshPath = "/home/stelio/Documents/thixotropicSimulation/results/PipeFlow2D/"
+meshFile = "PipeFlow2D"
+simulation_type = '2D'
 
 R = 10e-3
 L=168e-3

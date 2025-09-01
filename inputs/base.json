@@ -1,0 +1,29 @@
+{
+  "simulation_name": "pipe_flow2D",
+  "fluid": {
+    "type": "power_law",
+    "density": 1000.0,
+    "k": 5.0,
+    "n": 0.4
+  },
+  "mesh": {
+    "file_path": "results/PipeFlow2D/PipeFlow2D.msh",
+    "dimension": 2,
+    "velocity_element": ["Lagrange", 2],
+    "pressure_element": ["Lagrange", 1],
+    "fluidity_element": ["Lagrange", 1],
+    "output_dir": "results/PipeFlow2D/"
+  },
+  "boundaries": {
+    "inlet":
+      {
+        "subdomain": "Inlet",
+        "type": "flow_rate",
+        "origin": [0.0, 0.0],
+        "value": [1,0],
+        "radius": 0.01
+      },
+    "outlet": ["Outlet"],
+    "no_slip": ["Wall"]
+  }
+}

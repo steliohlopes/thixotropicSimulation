@@ -11,24 +11,4 @@ class Fluid:
         self.phiInf = phiInf
         self.Tc = Tc
         self.Ta = Ta
-    @classmethod
-    def from_file(cls, file_path):
-        #.txt file exemple
 
-        # rho=1000
-        # k=0.1
-        # nPow=0.572
-        # tau0=6.21358
-        # eta0=0.001
-        # etaInf=64.1
-        # ts=663
-
-        with open(file_path, 'r') as file:
-            lines = file.readlines()
-
-        attributes = {}
-        for line in lines:
-            key, value = line.strip().split('=')
-            attributes[key.strip()] = float(value.strip())
-
-        return cls(**attributes)
