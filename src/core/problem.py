@@ -25,13 +25,13 @@ class Problem:
         self.w = Function(self.mesh.functionSpace)
 
         # Split into Velocity and Pressure
-        if self.mesh.Dim == 3:
+        if self.mesh.dimension == 3:
             (self.u, self.p, self.f) = (
                 as_vector((self.w[0], self.w[1], self.w[2])),
                 self.w[3],
                 self.w[4],
             )
-        elif self.mesh.Dim == 2:
+        elif self.mesh.dimension == 2:
             (self.u, self.p, self.f) = (
                 as_vector((self.w[0], self.w[1])),
                 self.w[2],
@@ -47,7 +47,7 @@ class Problem:
         if direction==None:
             D = 0.5 * (nabla_grad(u_dim) + nabla_grad(u_dim).T)
         else:
-            if self.mesh.Dim == 3:
+            if self.mesh.dimension == 3:
                 if direction==0:
                     D = sym(as_tensor([ [        0        ,     (u_dim[0].dx(1))*0.5         , (u_dim[0].dx(2))*0.5 ],
                                     [(u_dim[0].dx(1))*0.5,         u_dim[1].dx(1)            , (u_dim[2].dx(1) + u_dim[1].dx(2))*0.5 ],
@@ -63,7 +63,7 @@ class Problem:
                                     [(u_dim[1].dx(0) + u_dim[0].dx(1))*0.5,         u_dim[1].dx(1)            , (u_dim[2].dx(1))*0.5 ],
                                     [(      u_dim[2].dx(0))*0.5,            (u_dim[2].dx(1))*0.5          ,        0] ]))
                     
-            elif self.mesh.Dim == 2:
+            elif self.mesh.dimension == 2:
                 if direction==0:
                     D = sym(as_matrix([ [        0        ,     (u_dim[0].dx(1))*0.5      ],
                                     [(u_dim[0].dx(1))*0.5,         u_dim[1].dx(1)        ],]))
@@ -137,7 +137,7 @@ class Problem:
         Uinlet = Expression( ('(Q/(pi*pow(R,3)))*((3*n+1)/(pow(R,(1/n))*(n+1))*(pow(R,((n+1)/n))-pow(pow(pow(x[1] - y_0 ,2)+pow(x[2] - z_0,2),0.5),((n+1)/n))))') ,
                                     degree=2,R=self.boundaries.R,z_0=self.boundaries.Origin[2],y_0=self.boundaries.Origin[1],pi=pi,n=self.fluid.nPow,Q=self.Q)
         u = interpolate(Uinlet,V)
-        if self.mesh.Dim == 3:
+        if self.mesh.dimension == 3:
             TraceD2 = pow(u.dx(0),2) + pow((u.dx(1)),2) + pow(u.dx(2),2) 
         else:
             TraceD2 = pow(u.dx(0),2) + pow((u.dx(1)),2)
@@ -183,10 +183,10 @@ class Problem:
         v = TestFunction(V)
         # u = u*self.U
         
-        # if self.mesh.Dim == 3:
+        # if self.mesh.dimension == 3:
         #     TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + pow( u[2].dx(2),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2))+ 2*(pow((u[0].dx(2) + u[2].dx(0))*0.5,2))+ 2*(pow((u[2].dx(1) + u[1].dx(2))*0.5,2))
 
-        # if self.mesh.Dim == 2:
+        # if self.mesh.dimension == 2:
         #     TraceD2 =  pow(u[0].dx(0),2) + pow(u[1].dx(1),2) + 2*(pow((u[1].dx(0) + u[0].dx(1))*0.5,2)) 
 
         # gammadot = pow( abs(TraceD2) *0.5, 0.5)
@@ -272,13 +272,13 @@ class Problem:
         if wini != None:
             self.w = wini
 
-            if self.mesh.Dim == 3:
+            if self.mesh.dimension == 3:
                 (self.u, self.p, self.f) = (
                     as_vector((self.w[0], self.w[1], self.w[2])),
                     self.w[3],
                     self.w[4],
                 )
-            elif self.mesh.Dim == 2:
+            elif self.mesh.dimension == 2:
                 (self.u, self.p, self.f) = (
                     as_vector((self.w[0], self.w[1])),
                     self.w[2],
