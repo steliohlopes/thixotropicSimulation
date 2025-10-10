@@ -105,9 +105,19 @@ class Boundaries:
                 '''
                 UinletDimVec = Expression( ('1-pow(pow(pow(x[1] - y_0 ,2)+pow(x[2] - z_0,2),0.5)/R,((n+1)/n))','0','0') ,
                                     degree=2,R=self.R,z_0=self.Origin[2],y_0=self.Origin[1],n=self.fluid.nPow)
-            # elif self.mesh.Dim == 2:
-            #     UinletDim = Expression( ('(Q/(pi*pow(R,3)))*((3*n+1)/(pow(R,(1/n))*(n+1))*(pow(R,((n+1)/n))-pow(pow(pow(x[0] - OriginX ,2)+pow(x[1] - OriginY,2),0.5),((n+1)/n))))','0') ,
-            #                         degree=2,Q=self.Q,R=self.R,OriginX=self.Origin[0],OriginY=self.Origin[1],pi=pi,n=self.fluid.nPow)
+            elif self.mesh.Dim == 2:
+                # Dimensionless power-law inlet profile for 2D domains (mirrors 3D form)
+                y_0 = self.Origin[1] if len(self.Origin) > 1 else 0.0
+                UinletDimVec = Expression(
+                    (
+                        '1-pow(fabs(x[1] - y_0)/R,((n+1)/n))',
+                        '0',
+                    ),
+                    degree=2,
+                    R=self.R,
+                    y_0=y_0,
+                    n=self.fluid.nPow,
+                )
             for sub in self.inletBCs:
                 self.bcs.append(
                     DirichletBC(
@@ -117,3 +127,42 @@ class Boundaries:
                         self.mesh.subdomains[sub],
                     )
                 )
+            
+    def _powerlaw_inlet_expression(self, axis: int, Q: float, R: float, n: float, origin: tuple[float, ...], mesh_dim: int, degree: int = 2):
+        """
+        Return a vector Expression whose 'axis' component carries the
+        volumetric-flow-rate profile and the other components are zero.
+        """
+
+        # ---------------- build scalar profile -----------------
+        # choose the two coordinates transverse to the flow direction
+        if mesh_dim == 3:
+            other = [i for i in (0, 1, 2) if i != axis]
+            coord_a, coord_b = other
+            # radial distance r = sqrt( (x[coord_a]-a0)^2 + (x[coord_b]-b0)^2 )
+            scalar = (
+                "(Q/(pi*pow(R,3))) * ((3*n+1)/(pow(R,(1/n))*(n+1)))"
+                "*( pow(R,((n+1)/n))"
+                "  - pow(pow(pow(x[{a}] - a0, 2) + pow(x[{b}] - b0, 2),0.5), (n+1)/n) )"
+            ).format(a=coord_a, b=coord_b)
+
+        else:
+            other = 1 if axis == 0 else 0
+            scalar = (
+                "(Q/(pi*pow(R,3))) * ((3*n+1)/(pow(R,(1/n))*(n+1)))"
+                "*( pow(R,((n+1)/n))"
+                "  - pow(pow(pow(x[{a}] - a0, 2),0.5), (n+1)/n) )"
+            ).format(a=other)
+
+        # ---------------- assemble vector ----------------------
+        vec = ["0.0", "0.0", "0.0"]
+        vec[axis] = scalar
+        expr_tuple = tuple(vec[:mesh_dim])
+
+        # ---------------- create Expression --------------------
+        kwargs = dict(
+            degree=degree, Q=Q, R=R, n=n, pi=pi,
+            a0=origin[other[0]] if mesh_dim == 3 else origin[other],
+            b0=origin[other[1]] if mesh_dim == 3 else 0.0,
+        )
+        return Expression(expr_tuple, **kwargs)
