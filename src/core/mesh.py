@@ -1,6 +1,6 @@
 from src.utils.config_parser import MeshDimension
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional
 import meshio
 import dolfin as df
 
@@ -9,15 +9,20 @@ class Mesh:
         print("\n=== Mesh Initialization ===")
         
         self.config = config.mesh
- 
-        self._read_physical_names()
-
-        Path(self.config.output_dir).mkdir(parents=True, exist_ok=True)
         
+        # Internal storage
         self.mesh_obj: Optional[df.Mesh] = None
         self.mf: Optional[df.MeshFunction] = None
         self.cf: Optional[df.MeshFunction] = None
         self.function_space: Optional[df.FunctionSpace] = None
+        self.dx: Optional[df.Measure] = None
+        self.ds: Optional[df.Measure] = None
+        self.dimension: Optional[int] = None
+        self.DoF: Optional[int] = None
+
+        self._read_physical_names()
+
+        Path(self.config.output_dir).mkdir(parents=True, exist_ok=True)
         self._initialize_mesh()
 
     def _initialize_mesh(self):
@@ -125,14 +130,14 @@ class Mesh:
         self._setup_mesh_properties()
 
     def _setup_mesh_properties(self):
-            self.element_shape = self.mesh_obj.ufl_cell()
-            self.dimension = self.mesh_obj.geometric_dimension()
-            self.h = df.CellDiameter(self.mesh_obj)
-            self.n = df.FacetNormal(self.mesh_obj)
-            
-            # Medidas para integração
-            self.dx = df.Measure("dx", domain=self.mesh_obj, subdomain_data=self.cf)
-            self.ds = df.Measure("ds", domain=self.mesh_obj, subdomain_data=self.mf)
+        self.element_shape = self.mesh_obj.ufl_cell()
+        self.dimension = self.mesh_obj.geometric_dimension()
+        self.h = df.CellDiameter(self.mesh_obj)
+        self.n = df.FacetNormal(self.mesh_obj)
+
+        # Medidas para integração
+        self.dx = df.Measure("dx", domain=self.mesh_obj, subdomain_data=self.cf)
+        self.ds = df.Measure("ds", domain=self.mesh_obj, subdomain_data=self.mf)
 
     def _setup_function_space(self):
         elements = []
@@ -157,4 +162,27 @@ class Mesh:
             
         self.UPel = df.MixedElement(elements)
         self.function_space = df.FunctionSpace(self.mesh_obj, self.UPel)
+        # TODO(legacy): remove this alias once solvers use `function_space` directly
+        self.functionSpace = self.function_space
         self.dof = self.function_space.dim()
+        # TODO(legacy): drop DoF alias after legacy solver refactor
+        self.DoF = self.dof
+        # TODO(legacy): replace meshObj usage with mesh_obj in downstream code
+        self.meshObj = self.mesh_obj
+
+        # Ensure attributes expected by legacy code exist
+        if not hasattr(self, "Uel"):
+            self.Uel = None
+        if not hasattr(self, "Pel"):
+            self.Pel = None
+        if not hasattr(self, "Fel"):
+            self.Fel = None
+
+    # Legacy API compatibility -------------------------------------------------
+    # TODO(legacy): remove once callers use `mesh.dx` property directly
+    def dx(self, *args, **kwargs):
+        return self._dx(*args, **kwargs) if args or kwargs else self._dx
+
+    # TODO(legacy): remove once callers use `mesh.ds` property directly
+    def ds(self, *args, **kwargs):
+        return self._ds(*args, **kwargs) if args or kwargs else self._ds

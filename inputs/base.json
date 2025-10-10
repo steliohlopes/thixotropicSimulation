@@ -1,13 +1,18 @@
 {
   "simulation_name": "pipe_flow2D",
   "fluid": {
-    "type": "power_law",
+    "type": "newtonian",
     "density": 1000.0,
-    "k": 5.0,
-    "n": 0.4
+    "k": 0.799,
+    "n": 1,
+    "viscosity": 0.799,
+    "phi0": 0.0001,
+    "phiInf": 20000.0,
+    "ta": 1.0,
+    "tc": 1.0
   },
   "mesh": {
-    "file_path": "results/PipeFlow2D/PipeFlow2D.msh",
+    "file_path": "PreProcessing/PipeFlow2D/PipeFlow2D.msh",
     "dimension": 2,
     "velocity_element": ["Lagrange", 2],
     "pressure_element": ["Lagrange", 1],
@@ -15,15 +20,23 @@
     "output_dir": "results/PipeFlow2D/"
   },
   "boundaries": {
-    "inlet":
-      {
-        "subdomain": "Inlet",
-        "type": "flow_rate",
-        "origin": [0.0, 0.0],
-        "value": [1,0],
-        "radius": 0.01
-      },
+    "inlet": {
+      "subdomain": "Inlet",
+      "type": "flow_rate",
+      "origin": [-12e-3, 0.0],
+      "value": [1e-12, 0.0],
+      "radius": 100e-6
+
+    },
     "outlet": ["Outlet"],
     "no_slip": ["Wall"]
+  },
+  "simulation": {
+    "model": "newtonian",
+    "length_scale": 24e-3,
+    "flow_rate": 1e-7,
+    "outlet_pressure": 0.0,
+    "dimensional_output": true,
+    "save_checkpoint": false
   }
 }

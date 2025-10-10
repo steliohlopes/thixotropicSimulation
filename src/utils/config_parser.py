@@ -102,11 +102,23 @@ class BoundaryConfig:
             self.no_slip = (self.no_slip,)
             
     
+@dataclass
+class SimulationParameters:
+    model:              str = "newtonian"
+    length_scale:       float = 1.0
+    flow_rate:          float = 1.0
+    outlet_pressure:    float = 0.0
+    dimensional_output: bool = True
+    save_checkpoint:    bool = False
+
+
 @dataclass(slots=True)
 class SimulationConfig:
+    name:       str
     mesh:       MeshConfig
     fluid:      FluidConfig
     boundaries: BoundaryConfig
+    parameters: SimulationParameters
     
 class ConfigParser:
     
@@ -120,9 +132,11 @@ class ConfigParser:
     def _build_config(cls, raw: dict[str, Any]):
         
         return SimulationConfig(
+            name        = raw.get("simulation_name", "simulation"),
             mesh        = cls._build_mesh(raw["mesh"]),
             fluid       = cls._build_fluid(raw["fluid"]),
-            boundaries  = cls._build_boundaries(raw["boundaries"])
+            boundaries  = cls._build_boundaries(raw["boundaries"]),
+            parameters  = cls._build_parameters(raw.get("simulation", {}))
             )
         
     @classmethod
@@ -171,6 +185,20 @@ class ConfigParser:
             outlet   = boundaries_data.get("outlet"),
             no_slip  = boundaries_data.get("no_slip"),
             symmetry = sym_dict
+        )
+    
+    @classmethod
+    def _build_parameters(cls, simulation_data: dict[str, Any]):
+        if not simulation_data:
+            return SimulationParameters()
+
+        return SimulationParameters(
+            model              = simulation_data.get("model", "newtonian").lower(),
+            length_scale       = simulation_data.get("length_scale", 1.0),
+            flow_rate          = simulation_data.get("flow_rate", 1.0),
+            outlet_pressure    = simulation_data.get("outlet_pressure", 0.0),
+            dimensional_output = simulation_data.get("dimensional_output", True),
+            save_checkpoint    = simulation_data.get("save_checkpoint", False),
         )
         
         

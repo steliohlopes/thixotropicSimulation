@@ -4,12 +4,44 @@ from src.utils.config_parser import InletType
 class Boundaries:
     def __init__(self, mesh, fluid, config):
         self.config = config.boundaries
-                    
+        self.parameters = getattr(config, "parameters", None)
+
         V = mesh.function_space.sub(0)
         Q = mesh.function_space.sub(1)
         G = mesh.function_space.sub(2)
         
         self.bcs = []
+        self.mesh = mesh
+        self.fluid = fluid
+
+    # --- compatibility attributes ---
+    # TODO(legacy): remove this block when Problem/Solver consume new config directly
+        self.inletBCs = tuple(self.config.inlet.subdomain)
+        self.outletBCs = tuple(self.config.outlet)
+        self.noSlipBCs = tuple(self.config.no_slip)
+        self.Pout = self.parameters.outlet_pressure if self.parameters else 0.0
+        self.R = self.config.inlet.radius
+        origin = self.config.inlet.origin or (0.0,) * mesh.dimension
+        if len(origin) < mesh.dimension:
+            origin = origin + (0.0,) * (mesh.dimension - len(origin))
+        self.Origin = origin
+        self.UinVector_dim = None
+        self.inletCondition = 0
+
+        # Symmetry configuration for legacy solver
+        if self.config.symmetry:
+            axes = sorted(self.config.symmetry.items(), key=lambda kv: kv[0].value)
+            symmetry_axes = [axis.value for axis, _ in axes]
+            symmetry_sets = [tags for _, tags in axes]
+            if len(symmetry_axes) == 1:
+                self.symmetryAxis = symmetry_axes[0]
+                self.symmetryBCs = symmetry_sets[0]
+            else:
+                self.symmetryAxis = symmetry_axes
+                self.symmetryBCs = symmetry_sets
+        else:
+            self.symmetryAxis = None
+            self.symmetryBCs = None
         
         # --- no slip ---
         zero_vec = df.Constant((0.0,)*mesh.dimension)
@@ -24,7 +56,7 @@ class Boundaries:
                 )
             )
         
-         # --- symmetry ---
+        # --- symmetry ---
         for axis, tags in self.config.symmetry.items():
             for tag in tags:
                 comp_space = V.sub(axis.value)
@@ -36,10 +68,12 @@ class Boundaries:
                     )
                 )
                 
-         # --- inlet ---
+        # --- inlet ---
         for subdomain in self.config.inlet.subdomain:
             if  self.config.inlet.type is InletType.VELOCITY_CONST:
                 vec = df.Constant(self.config.inlet.value)
+                self.UinVector_dim = self.config.inlet.value
+                self.inletCondition = 1
                 self.bcs.append(
                     df.DirichletBC(
                         V, 
@@ -50,10 +84,11 @@ class Boundaries:
                 )
         
             elif self.config.inlet.type is InletType.FLOW_RATE:
-                n = fluid.config.n or 1.0
+                n = fluid.nPow if hasattr(fluid, "nPow") else (fluid.config.n or 1.0)
                 axis = next(i for i,v in enumerate(self.config.inlet.value) if v != 0.0)
                 flow_rate = self.config.inlet.value[axis]
-                expr = self._powerlaw_inlet_expression(axis, flow_rate, self.config.inlet.radius, n, self.config.inlet.origin, mesh.dimension)
+                expr = self._powerlaw_inlet_expression(axis, flow_rate, self.R, n, self.Origin, mesh.dimension)
+                self.inletCondition = 1
                 self.bcs.append(
                     df.DirichletBC(
                         mesh.function_space.sub(0), 
@@ -62,9 +97,11 @@ class Boundaries:
                         mesh.subdomains[subdomain]
                     )
                 )
-            #TODO
             elif self.config.inlet.type is InletType.PRESSURE:
+                self.inletCondition = 0
                 raise ValueError("Pressure inlets coming soon!  For now use 'velocity_const' or 'flow_rate'.")
+            else:
+                self.inletCondition = 0
                 
         
     def _powerlaw_inlet_expression(self, axis: int, Q: float, R: float, n: float, origin: tuple[float, ...], mesh_dim: int, degree: int = 2):
