@@ -62,9 +62,9 @@ if comm.rank ==0:
 fluid = Fluid(
         rho=1000,
         k=0.799,
-        nPow=0.696,
-        phi0=1/50,
-        phiInf=1/0.01,
+        nPow=0.8,
+        phi0=1/100,
+        phiInf=1/0.001,
         )
 
 
@@ -74,11 +74,11 @@ fluid = Fluid(
 # checkPointFile = f"{meshPath}{meshFile}Newtonian_checkpoint.xdmf"
 boundaries = Boundaries(mesh=mesh,fluid=fluid, Origin=Origin,R=R)
 problem = Problem(mesh=mesh,fluid=fluid,boundaries=boundaries, L=H,Q=Q)
-problem.Equation('newtonian')
-newtonianTest = Solver(problem)
-newtonianTest.SimulateEquation()
-newtonianTest.SaveSimulationData(filePath=meshPath,fileName=f"{meshFile}Newtonian",dimensional=True,Checkpoint=True)
-checkPointFile = f"{meshPath}{meshFile}Newtonian_checkpoint.xdmf"
+# problem.Equation('newtonian')
+# newtonianTest = Solver(problem)
+# newtonianTest.SimulateEquation()
+# newtonianTest.SaveSimulationData(filePath=meshPath,fileName=f"{meshFile}Newtonian",dimensional=True,Checkpoint=True)
+checkPointFile = f"{meshPath}{meshFile}SMD_checkpoint.xdmf"
 
 problem.Equation('SMD', CheckPointFile=checkPointFile)
 newtonianTest = Solver(problem)
